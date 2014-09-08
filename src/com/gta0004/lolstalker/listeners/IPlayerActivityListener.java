@@ -1,4 +1,4 @@
-package com.gta0004.lolstalker.Listeners;
+package com.gta0004.lolstalker.listeners;
 
 public interface IPlayerActivityListener {
 	public void run();
