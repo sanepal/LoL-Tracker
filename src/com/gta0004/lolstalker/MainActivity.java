@@ -248,12 +248,12 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
 
         URI website = new URI("https://na.api.pvp.net/api/lol/na/v1.4/summoner/by-name/" + name + "?"
             + Constants.KEY_PARAM);
-        Log.e("log_tag", website.toString());
+        Log.i("log_tag", website.toString());
         HttpGet request = new HttpGet();
         request.setURI(website);
         HttpResponse response = httpclient.execute(request);
         int responseCode = response.getStatusLine().getStatusCode();
-        Log.e("log_tag", "Get summoner response " + responseCode);
+        Log.i("log_tag", "Get summoner response " + responseCode);
         if (responseCode / 100 != 2) {
           result = NameLookupResponseCode.DOES_NOT_EXIST;
           return null;
@@ -272,7 +272,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
         request.setURI(website);
         response = httpclient.execute(request);
         responseCode = response.getStatusLine().getStatusCode();
-        Log.e("log_tag", "Last Match response " + responseCode);
+        Log.i("log_tag", "Last Match response " + responseCode);
         if (responseCode / 100 != 2) {
           result = NameLookupResponseCode.UNKNOWN_ERROR;
           return null;
@@ -308,7 +308,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     public void onPostExecute(SummonerDto summoner) {
       Toast.makeText(getApplication(), result.getMessage(), Toast.LENGTH_SHORT).show();
       if (result == NameLookupResponseCode.SUCCESS) {
-        Log.e("log_tag", summoner.toString());
+        Log.i("log_tag", summoner.toString());
         addNewSummoner(summoner);
         addToFeed(summoner);
       }

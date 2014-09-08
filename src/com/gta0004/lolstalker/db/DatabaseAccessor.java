@@ -32,9 +32,6 @@ public class DatabaseAccessor {
 
   public void insertNewSummoner(SummonerDto summoner) {
     ContentValues values = new ContentValues();
-    if (summoner == null) {
-      Log.e("log_tag", "summonerdto  is null");
-    }
     values.put(DatabaseHelper.COLUMN_SUMM_ID, summoner.id);
     values.put(DatabaseHelper.COLUMN_SUMM_NAME, summoner.name);
     values.put(DatabaseHelper.COLUMN_SUMM_IC, summoner.profileIconId);
