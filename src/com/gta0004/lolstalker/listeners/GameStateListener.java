@@ -13,10 +13,8 @@ import org.apache.http.util.EntityUtils;
 
 import android.util.Log;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.gta0004.lolstalker.riot.LastMatch;
 import com.gta0004.lolstalker.riot.SummonerDto;
 import com.gta0004.lolstalker.utils.Constants;
 

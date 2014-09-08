@@ -308,7 +308,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     public void onPostExecute(SummonerDto summoner) {
       Toast.makeText(getApplication(), result.getMessage(), Toast.LENGTH_SHORT).show();
       if (result == NameLookupResponseCode.SUCCESS) {
-        // Log.e("log_tag", summoner.toString());
+        Log.e("log_tag", summoner.toString());
         addNewSummoner(summoner);
         addToFeed(summoner);
       }
