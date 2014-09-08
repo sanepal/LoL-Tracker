@@ -1,4 +1,4 @@
-package com.gta0004.lolstalker.Riot;
+package com.gta0004.lolstalker.riot;
 
 public class LastMatch {
   public long matchId;

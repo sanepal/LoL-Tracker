@@ -11,8 +11,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.util.Log;
 
-import com.gta0004.lolstalker.Riot.LastMatch;
-import com.gta0004.lolstalker.Riot.SummonerDto;
+import com.gta0004.lolstalker.riot.LastMatch;
+import com.gta0004.lolstalker.riot.SummonerDto;
 
 public class DatabaseAccessor {
   private SQLiteDatabase database;

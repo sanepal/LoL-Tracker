@@ -1,4 +1,4 @@
-package com.gta0004.lolstalker.Service;
+package com.gta0004.lolstalker.service;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;

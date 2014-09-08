@@ -23,10 +23,10 @@ import android.app.DialogFragment;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.widget.DrawerLayout;
-import android.text.InputFilter.LengthFilter;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -42,10 +42,11 @@ import android.widget.Toast;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.gta0004.lolstalker.Riot.LastMatch;
-import com.gta0004.lolstalker.Riot.SummonerDto;
-import com.gta0004.lolstalker.Utils.Constants;
 import com.gta0004.lolstalker.db.DatabaseAccessor;
+import com.gta0004.lolstalker.riot.LastMatch;
+import com.gta0004.lolstalker.riot.SummonerDto;
+import com.gta0004.lolstalker.service.FeedUpdateService;
+import com.gta0004.lolstalker.utils.Constants;
 
 public class MainActivity extends Activity implements NavigationDrawerFragment.NavigationDrawerCallbacks {
 
@@ -61,7 +62,6 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
   private static ArrayAdapter<String> feedAdapter = null;
 
   private DatabaseAccessor dbA;
-  private JsonParser parser = new JsonParser();
 
   /**
    * Used to store the last screen title. For use in {@link #restoreActionBar()}
@@ -83,6 +83,8 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     dbA = new DatabaseAccessor(this);
     getInitialSummoners();
     getInititalFeed();
+    Intent intent = new Intent(this, FeedUpdateService.class);
+    startService(intent);
   }
 
   @Override
@@ -156,8 +158,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
 
   private void addToFeed(SummonerDto summoner) {
     feedAdapter.add("Last match was " + summoner.lastMatch.matchId + " that resulted in a "
-        + (summoner.lastMatch.winner ? "win" : "loss") + " with " + summoner.lastMatch.pentakills
-        + " pentakills.");
+        + summoner.lastMatch.winner + " with " + summoner.lastMatch.pentakills + " pentakills.");
     feedAdapter.notifyDataSetChanged();
   }
 
@@ -213,9 +214,11 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
   }
 
   private static enum NameLookupResponseCode {
-    SUCCESS("Summoner found"), BAD_SUMMONER_NAME(
-        "That summoner does not exist or has not played any ranked games this season"), ERROR_CODE(
-        "Network error"), UNKNOWN_ERROR("Unknown error");
+    SUCCESS("Summoner found"), 
+    BAD_SUMMONER_NAME("That summoner does not exist or has not played any games this season"), 
+    DOES_NOT_EXIST( "That summoner name is not registered"), 
+    NO_GAMES("That summoner has not played any games this season"),
+    UNKNOWN_ERROR("Unknown error");
     private String message;
 
     private NameLookupResponseCode(String message) {
@@ -230,7 +233,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
   public class VerifyNameTask extends AsyncTask<String, Void, SummonerDto> {
 
     private NameLookupResponseCode result;
-
+    
     @Override
     protected SummonerDto doInBackground(String... params) {
       String name = params[0];
@@ -252,24 +255,16 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
         int responseCode = response.getStatusLine().getStatusCode();
         Log.e("log_tag", "Get summoner response " + responseCode);
         if (responseCode / 100 != 2) {
-          Toast.makeText(getApplication(), "Error", Toast.LENGTH_SHORT).show();
-          result = NameLookupResponseCode.ERROR_CODE;
+          result = NameLookupResponseCode.DOES_NOT_EXIST;
           return null;
         }
-
         String jsonStr = EntityUtils.toString(response.getEntity());
+        JsonParser parser = new JsonParser();
         JsonObject jsonObj = parser.parse(jsonStr).getAsJsonObject();
         Gson gson = new Gson();
-        SummonerDto summoner = null;
-        try {
-          summoner = gson.fromJson(jsonObj.get(name.toLowerCase(Locale.ENGLISH)).getAsJsonObject(),
-              SummonerDto.class);
-        } catch (NullPointerException e) {
-          result = NameLookupResponseCode.BAD_SUMMONER_NAME;
-          return null;
-        }
+        SummonerDto summoner = gson.fromJson(jsonObj.get(name.toLowerCase(Locale.ENGLISH)).getAsJsonObject(), SummonerDto.class);
         if (summoner == null) {
-          result = NameLookupResponseCode.UNKNOWN_ERROR;
+          result = NameLookupResponseCode.BAD_SUMMONER_NAME;
           return null;
         }
         website = new URI("https://na.api.pvp.net/api/lol/na/v2.2/matchhistory/" + summoner.id
@@ -279,22 +274,27 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
         responseCode = response.getStatusLine().getStatusCode();
         Log.e("log_tag", "Last Match response " + responseCode);
         if (responseCode / 100 != 2) {
-          result = NameLookupResponseCode.ERROR_CODE;
+          result = NameLookupResponseCode.UNKNOWN_ERROR;
           return null;
         }
-        jsonStr = EntityUtils.toString(response.getEntity());
-        jsonObj = parser.parse(jsonStr).getAsJsonObject();
-        jsonObj = jsonObj.get("matches").getAsJsonArray().get(0).getAsJsonObject();
-        LastMatch lastMatch = new LastMatch();
-        lastMatch.matchId = jsonObj.get("matchId").getAsLong();
-        lastMatch.queueType = jsonObj.get("queueType").getAsString();
-        jsonObj = jsonObj.get("participants").getAsJsonArray().get(0).getAsJsonObject();
-        jsonObj = jsonObj.get("stats").getAsJsonObject();
-        lastMatch.winner = jsonObj.get("winner").getAsBoolean();
-        lastMatch.pentakills = jsonObj.get("pentaKills").getAsInt();
-        summoner.lastMatch = lastMatch;
-        result = NameLookupResponseCode.SUCCESS;
-        return summoner;
+        try {
+          jsonStr = EntityUtils.toString(response.getEntity());
+          jsonObj = parser.parse(jsonStr).getAsJsonObject();
+          jsonObj = jsonObj.get("matches").getAsJsonArray().get(0).getAsJsonObject();
+          LastMatch lastMatch = new LastMatch();
+          lastMatch.matchId = jsonObj.get("matchId").getAsLong();
+          lastMatch.queueType = jsonObj.get("queueType").getAsString();
+          jsonObj = jsonObj.get("participants").getAsJsonArray().get(0).getAsJsonObject();
+          jsonObj = jsonObj.get("stats").getAsJsonObject();
+          lastMatch.winner = jsonObj.get("winner").getAsBoolean();
+          lastMatch.pentakills = jsonObj.get("pentaKills").getAsInt();
+          summoner.lastMatch = lastMatch;
+          result = NameLookupResponseCode.SUCCESS;
+          return summoner;
+        } catch (NullPointerException e) {
+          result = NameLookupResponseCode.NO_GAMES;
+          return null;
+        }
 
       } catch (Exception e) {
         Log.e("log_tag", "Error in http connection " + e.toString());
