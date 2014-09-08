@@ -63,6 +63,9 @@ public class GameStateListener extends AbstractPlayerActivityListener {
       Log.i("GameStateListener", "Last Match ID: " + lastMatchId + " Most Recent Match ID: "
           + mostRecentMatchId);
       stateChanged = mostRecentMatchId != lastMatchId;
+      if (stateChanged) {
+        lastMatchId = mostRecentMatchId;
+      }
     } catch (Exception e) {
       Log.e("GameStateListener", "Error in http connection " + e.toString());
       e.printStackTrace();
