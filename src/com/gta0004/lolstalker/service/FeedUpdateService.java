@@ -26,16 +26,17 @@ public class FeedUpdateService extends Service {
 
 		@Override
 		public void run() {
-			Log.e("update runnable", "Running Listener");
+			Log.i("update runnable", "Running Listener");
 			if (currIndex == listeners.size())
 				currIndex = 0;
 			IPlayerActivityListener listener = listeners.get(currIndex++);
 			listener.run();
-			if (listener.stateChanged())
-				Log.e("update runnable", "Listener state was changed.");
-			else
-				Log.e("update runnable", "No change to listener.");
-			
+			if (listener.stateChanged()) {
+			  Log.i(listener.getClass().getName(), "Listener state was changed.");
+			  // notify(listener.getMessage());
+			} else {
+				Log.i(listener.getClass().getName(), "No change to listener.");
+			}	
 		}
 		
 	};
@@ -61,13 +62,13 @@ public class FeedUpdateService extends Service {
     	for (SummonerDto summoner : listOfSummoners) {
     		listeners.add(new GameStateListener(summoner));
     	}
-    	Log.e("FeedUpdateService", "onCreate complete");
+    	Log.i("FeedUpdateService", "onCreate complete");
     }
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         // The service is starting, due to a call to startService()
     	handle = scheduler.scheduleWithFixedDelay(update, 0, 1200, TimeUnit.MILLISECONDS);
-    	Log.e("FeedUpdateService", "onStartCommand complete");
+    	Log.i("FeedUpdateService", "onStartCommand complete");
         return mStartMode;
     }
     @Override
