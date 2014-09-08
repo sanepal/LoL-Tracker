@@ -1,15 +1,23 @@
 package com.gta0004.lolstalker.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import com.gta0004.lolstalker.Listeners.GameStateListener;
+import com.gta0004.lolstalker.Listeners.IPlayerActivityListener;
+import com.gta0004.lolstalker.Riot.SummonerDto;
+import com.gta0004.lolstalker.db.DatabaseAccessor;
 
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 public class FeedUpdateService extends Service {
 	
@@ -18,13 +26,25 @@ public class FeedUpdateService extends Service {
 
 		@Override
 		public void run() {
-			// TODO Auto-generated method stub
+			Log.e("update runnable", "Running Listener");
+			if (currIndex == listeners.size())
+				currIndex = 0;
+			IPlayerActivityListener listener = listeners.get(currIndex++);
+			listener.run();
+			if (listener.stateChanged())
+				Log.e("update runnable", "Listener state was changed.");
+			else
+				Log.e("update runnable", "No change to listener.");
 			
 		}
 		
 	};
 	private ScheduledFuture handle = null;
+	private DatabaseAccessor dbA;
 	private SharedPreferences mPrefs;
+	private List<SummonerDto> listOfSummoners;
+	private List<IPlayerActivityListener> listeners;
+	private int currIndex = 0;
 	
 
 	int mStartMode = Service.START_STICKY;       // indicates how to behave if the service is killed
@@ -35,11 +55,19 @@ public class FeedUpdateService extends Service {
     public void onCreate() {
         // The service is being created    
     	mPrefs = PreferenceManager.getDefaultSharedPreferences(getApplication());
+    	dbA = new DatabaseAccessor(this);
+    	listOfSummoners = dbA.getAllSummoners();
+    	listeners = new ArrayList<IPlayerActivityListener>();
+    	for (SummonerDto summoner : listOfSummoners) {
+    		listeners.add(new GameStateListener(summoner));
+    	}
+    	Log.e("FeedUpdateService", "onCreate complete");
     }
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         // The service is starting, due to a call to startService()
-    	handle = scheduler.scheduleWithFixedDelay(update, 10, 10, TimeUnit.SECONDS);
+    	handle = scheduler.scheduleWithFixedDelay(update, 0, 1200, TimeUnit.MILLISECONDS);
+    	Log.e("FeedUpdateService", "onStartCommand complete");
         return mStartMode;
     }
     @Override

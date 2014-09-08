@@ -22,6 +22,7 @@ import android.app.DialogFragment;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.widget.DrawerLayout;
@@ -42,6 +43,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.gta0004.lolstalker.Riot.LastMatch;
 import com.gta0004.lolstalker.Riot.SummonerDto;
+import com.gta0004.lolstalker.Service.FeedUpdateService;
 import com.gta0004.lolstalker.Utils.Constants;
 import com.gta0004.lolstalker.db.DatabaseAccessor;
 
@@ -82,6 +84,8 @@ public class MainActivity extends Activity implements
 		dbA = new DatabaseAccessor(this);
 		getInitialSummoners();
 		getInititalFeed();
+		Intent intent = new Intent(this, FeedUpdateService.class);
+		startService(intent);
 	}
 
 	@Override
