@@ -1,7 +1,6 @@
 package com.gta0004.lolstalker;
 
 import java.net.URI;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -22,10 +21,14 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.DrawerLayout;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -44,7 +47,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.gta0004.lolstalker.db.DatabaseAccessor;
 import com.gta0004.lolstalker.riot.LastMatch;
-import com.gta0004.lolstalker.riot.SummonerDto;
+import com.gta0004.lolstalker.riot.Summoner;
 import com.gta0004.lolstalker.service.FeedUpdateService;
 import com.gta0004.lolstalker.utils.Constants;
 
@@ -54,14 +57,26 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
    * Fragment managing the behaviors, interactions and presentation of the
    * navigation drawer.
    */
+  public static final String NEW_FEED = "com.gta0004.lolstalker.NEW_FEED"; 
+  private static final String TAG = "MainActivity";
   private NavigationDrawerFragment mNavigationDrawerFragment;
-  private List<SummonerDto> listOfSummoners = null;
-  private static ArrayAdapter<SummonerDto> adapterForSummoners = null;
-
+  private List<Summoner> listOfSummoners = null;
+  private static ArrayAdapter<Summoner> adapterForSummoners = null;
+  private FeedUpdateService service;
   private List<String> feed = null;
   private static ArrayAdapter<String> feedAdapter = null;
-
   private DatabaseAccessor dbA;
+  private BroadcastReceiver bReceiver = new BroadcastReceiver() {
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+      if(intent.getAction().equals(NEW_FEED)) {
+        String message = intent.getStringExtra("Message");
+        addToFeed(message);
+      }      
+    }
+    
+  };
 
   /**
    * Used to store the last screen title. For use in {@link #restoreActionBar()}
@@ -83,7 +98,12 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     dbA = new DatabaseAccessor(this);
     getInitialSummoners();
     getInititalFeed();
+    LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(this);
+    IntentFilter intentFilter = new IntentFilter();
+    intentFilter.addAction(NEW_FEED);
+    bManager.registerReceiver(bReceiver, intentFilter);
     Intent intent = new Intent(this, FeedUpdateService.class);
+    intent.setAction("Initial");
     startService(intent);
   }
 
@@ -142,31 +162,39 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     return super.onOptionsItemSelected(item);
   }
 
-  private void addNewSummoner(SummonerDto summoner) {
+  private void addNewSummoner(Summoner summoner) {
     dbA.insertNewSummoner(summoner);
     adapterForSummoners.add(summoner);
     adapterForSummoners.notifyDataSetChanged();
+    Intent intent = new Intent(this, FeedUpdateService.class);
+    intent.setAction("NewSummoner");
+    intent.putExtra("id", summoner.id);
+    startService(intent);
   }
 
   private void getInitialSummoners() {
     listOfSummoners = dbA.getAllSummoners();
-
-    adapterForSummoners = new ArrayAdapter<SummonerDto>(this, android.R.layout.simple_list_item_1,
+    adapterForSummoners = new ArrayAdapter<Summoner>(this, android.R.layout.simple_list_item_1,
         listOfSummoners);
 
   }
 
-  private void addToFeed(SummonerDto summoner) {
+  private void addToFeed(Summoner summoner) {
     feedAdapter.add("Last match was " + summoner.lastMatch.matchId + " that resulted in a "
         + summoner.lastMatch.winner + " with " + summoner.lastMatch.pentakills + " pentakills.");
+    feedAdapter.notifyDataSetChanged();
+  }
+  
+  private void addToFeed(String message) {
+    feedAdapter.add(message);
     feedAdapter.notifyDataSetChanged();
   }
 
   private void getInititalFeed() {
     feed = new ArrayList<String>();
-    for (SummonerDto summoner : listOfSummoners) {
+    /*for (Summoner summoner : listOfSummoners) {
       feed.add("Last Match was " + summoner.lastMatch.matchId);
-    }
+    }*/
     feedAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, feed);
   }
 
@@ -230,39 +258,43 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     }
   }
 
-  public class VerifyNameTask extends AsyncTask<String, Void, SummonerDto> {
+  public class VerifyNameTask extends AsyncTask<String, Void, Summoner> {
 
     private NameLookupResponseCode result;
     
     @Override
-    protected SummonerDto doInBackground(String... params) {
+    protected Summoner doInBackground(String... params) {
       String name = params[0];
       name = name.replace(" ", "");
-      try {
-        HttpParams httpParameters = new BasicHttpParams();
+      HttpParams httpParameters = new BasicHttpParams();
+      HttpClient httpclient = null;
+      HttpGet request = new HttpGet();
+      HttpResponse response = null;
+      JsonParser parser = new JsonParser();
+      JsonObject jsonObj = null;
+      Gson gson = new Gson();
+      try {        
         int timeoutConnection = 3000;
         HttpConnectionParams.setConnectionTimeout(httpParameters, timeoutConnection);
         int timeoutSocket = 5000;
         HttpConnectionParams.setSoTimeout(httpParameters, timeoutSocket);
-        HttpClient httpclient = new DefaultHttpClient(httpParameters);
+        httpclient = new DefaultHttpClient(httpParameters);
 
         URI website = new URI("https://na.api.pvp.net/api/lol/na/v1.4/summoner/by-name/" + name + "?"
             + Constants.KEY_PARAM);
-        Log.i("log_tag", website.toString());
-        HttpGet request = new HttpGet();
+        Log.i(TAG, website.toString());
+        
         request.setURI(website);
-        HttpResponse response = httpclient.execute(request);
+        response = httpclient.execute(request);
         int responseCode = response.getStatusLine().getStatusCode();
-        Log.i("log_tag", "Get summoner response " + responseCode);
+        Log.i(TAG, "Get summoner response " + responseCode);
         if (responseCode / 100 != 2) {
           result = NameLookupResponseCode.DOES_NOT_EXIST;
           return null;
         }
-        String jsonStr = EntityUtils.toString(response.getEntity());
-        JsonParser parser = new JsonParser();
-        JsonObject jsonObj = parser.parse(jsonStr).getAsJsonObject();
-        Gson gson = new Gson();
-        SummonerDto summoner = gson.fromJson(jsonObj.get(name.toLowerCase(Locale.ENGLISH)).getAsJsonObject(), SummonerDto.class);
+        String jsonStr = EntityUtils.toString(response.getEntity());        
+        jsonObj = parser.parse(jsonStr).getAsJsonObject();        
+        Summoner summoner = gson.fromJson(jsonObj.get(name.toLowerCase(Locale.ENGLISH)).getAsJsonObject(), Summoner.class);
         if (summoner == null) {
           result = NameLookupResponseCode.BAD_SUMMONER_NAME;
           return null;
@@ -272,7 +304,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
         request.setURI(website);
         response = httpclient.execute(request);
         responseCode = response.getStatusLine().getStatusCode();
-        Log.i("log_tag", "Last Match response " + responseCode);
+        Log.i(TAG, "Last Match response " + responseCode);
         if (responseCode / 100 != 2) {
           result = NameLookupResponseCode.UNKNOWN_ERROR;
           return null;
@@ -297,7 +329,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
         }
 
       } catch (Exception e) {
-        Log.e("log_tag", "Error in http connection " + e.toString());
+        Log.e(TAG, "Error in http connection " + e.toString());
         e.printStackTrace();
         result = NameLookupResponseCode.UNKNOWN_ERROR;
         return null;
@@ -305,12 +337,12 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     }
 
     @Override
-    public void onPostExecute(SummonerDto summoner) {
+    public void onPostExecute(Summoner summoner) {
       Toast.makeText(getApplication(), result.getMessage(), Toast.LENGTH_SHORT).show();
       if (result == NameLookupResponseCode.SUCCESS) {
-        Log.i("log_tag", summoner.toString());
+        Log.i(TAG, summoner.toString());
         addNewSummoner(summoner);
-        addToFeed(summoner);
+        //addToFeed(summoner);
       }
     }
 

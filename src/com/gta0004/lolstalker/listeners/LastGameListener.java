@@ -15,14 +15,15 @@ import android.util.Log;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.gta0004.lolstalker.riot.SummonerDto;
+import com.gta0004.lolstalker.riot.Summoner;
 import com.gta0004.lolstalker.utils.Constants;
 
-public class GameStateListener extends AbstractPlayerActivityListener {
-
+public class LastGameListener extends AbstractPlayerActivityListener {
+  
+  private static final String TAG = "LastGameListener";
   private long lastMatchId;
   private boolean stateChanged = false;
-  private SummonerDto summoner;
+  private Summoner summoner;
   private static HttpClient httpclient;
   private URI website;
 
@@ -35,14 +36,16 @@ public class GameStateListener extends AbstractPlayerActivityListener {
     httpclient = new DefaultHttpClient(httpParameters);
   }
 
-  public GameStateListener(SummonerDto summoner) {
-    this.lastMatchId = summoner.lastMatch.matchId;
+  public LastGameListener(Summoner summoner) {
     this.summoner = summoner;
+    if (this.summoner.lastMatch != null) {
+      this.lastMatchId = this.summoner.lastMatch.matchId;
+    }
     try {
       website = new URI("https://na.api.pvp.net/api/lol/na/v2.2/matchhistory/" + summoner.id
           + "?beginIndex=0&endIndex=1&" + Constants.KEY_PARAM);
     } catch (Exception e) {
-      Log.e("GSL", "could not create URI for summoner: " + summoner.name, e);
+      Log.e(TAG, "could not create URI for summoner: " + summoner.name, e);
       // probably have some re-try logic or fallback logic or kill the
       // application here
     }
@@ -50,24 +53,26 @@ public class GameStateListener extends AbstractPlayerActivityListener {
 
   @Override
   public void run() {
+    HttpGet request = new HttpGet();
+    HttpResponse response = null;
+    JsonParser parser = new JsonParser();
+    JsonObject jsonObj = null;
     try {
-      HttpGet request = new HttpGet();
       request.setURI(website);
-      HttpResponse response = httpclient.execute(request);
-      Log.i("log_tag", "Last Match response " + response.getStatusLine().getStatusCode());
+      response = httpclient.execute(request);
+      Log.i(TAG, "Last Match response " + response.getStatusLine().getStatusCode());
       String jsonStr = EntityUtils.toString(response.getEntity());
-      JsonParser parser = new JsonParser();
-      JsonObject jsonObj = parser.parse(jsonStr).getAsJsonObject();
+      jsonObj = parser.parse(jsonStr).getAsJsonObject();
       jsonObj = jsonObj.get("matches").getAsJsonArray().get(0).getAsJsonObject();
       long mostRecentMatchId = jsonObj.get("matchId").getAsLong();
-      Log.i("GameStateListener", "Last Match ID: " + lastMatchId + " Most Recent Match ID: "
+      Log.i(TAG, "Last Match ID: " + lastMatchId + " Most Recent Match ID: "
           + mostRecentMatchId);
       stateChanged = mostRecentMatchId != lastMatchId;
       if (stateChanged) {
         lastMatchId = mostRecentMatchId;
       }
     } catch (Exception e) {
-      Log.e("GameStateListener", "Error in http connection " + e.toString());
+      Log.e(TAG, "Error in http connection " + e.toString());
       e.printStackTrace();
     }
   }
@@ -79,6 +84,6 @@ public class GameStateListener extends AbstractPlayerActivityListener {
 
   @Override
   public String getMessage() {
-    return summoner.name + " has started a game";
+    return summoner.name + " just finished a game!";
   }
 }

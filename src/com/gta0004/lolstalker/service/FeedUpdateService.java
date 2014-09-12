@@ -7,69 +7,103 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import com.gta0004.lolstalker.MainActivity;
 import com.gta0004.lolstalker.db.DatabaseAccessor;
-import com.gta0004.lolstalker.listeners.GameStateListener;
+import com.gta0004.lolstalker.listeners.LastGameListener;
 import com.gta0004.lolstalker.listeners.IPlayerActivityListener;
-import com.gta0004.lolstalker.riot.SummonerDto;
+import com.gta0004.lolstalker.riot.Summoner;
 
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Binder;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 public class FeedUpdateService extends Service {
 	
-	private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-	private Runnable update = new Runnable() {
-
+  private static final String TAG = "FeedUpdateService";
+  IBinder mBinder;      // interface for clients that bind
+	private ScheduledExecutorService listUpdateScheduler = Executors.newScheduledThreadPool(1);
+	private ScheduledExecutorService listenerRunScheduler = Executors.newScheduledThreadPool(1);
+	
+	private Runnable updateList = new Runnable() {
+    @Override
+    public void run() {
+      //runs an update on each listener with a 1.2s delay
+      listenerRunScheduler.scheduleWithFixedDelay(runListener, 0, 1200, TimeUnit.MILLISECONDS); 
+    }
+	  
+	};
+	
+	private Runnable runListener = new Runnable() {
 		@Override
 		public void run() {
-			Log.i("update runnable", "Running Listener");
-			if (currIndex == listeners.size())
-				currIndex = 0;
+			Log.i(TAG, "Running Listener");
+			//if reached end of list, cancel the task so that the scheduler stops running
+			if (currIndex == listeners.size()) {
+			  Log.i(TAG, "Cancelling run");
+			  currIndex = 0;
+        listenerUpdateHandle.cancel(true);
+			  return;
+			}				
+			//run listener and get updates
 			IPlayerActivityListener listener = listeners.get(currIndex++);
 			listener.run();
 			if (listener.stateChanged()) {
-			  Log.i(listener.getClass().getName(), "Listener state was changed.");
-			  // notify(listener.getMessage());
+			  Log.i(listener.getClass().getSimpleName(), "Listener state was changed.");
+			  //if state was changed, send the message back to the main activity
+			  //TODO if activity is in bg, send notification as well
+			  Intent intent = new Intent(MainActivity.NEW_FEED);
+			  intent.putExtra("Message", listener.getMessage());
+			  LocalBroadcastManager.getInstance(getApplication()).sendBroadcast(intent);
 			} else {
-				Log.i(listener.getClass().getName(), "No change to listener.");
+				Log.i(listener.getClass().getSimpleName(), "No change to listener.");
 			}	
 		}
 		
 	};
-	private ScheduledFuture handle = null;
+	private ScheduledFuture listUpdateHandle = null;
+	private ScheduledFuture listenerUpdateHandle = null;
 	private DatabaseAccessor dbA;
-	private SharedPreferences mPrefs;
-	private List<SummonerDto> listOfSummoners;
+	private List<Summoner> listOfSummoners;
 	private List<IPlayerActivityListener> listeners;
 	private int currIndex = 0;
 	
 
 	int mStartMode = Service.START_STICKY;       // indicates how to behave if the service is killed
-    IBinder mBinder;      // interface for clients that bind
-    boolean mAllowRebind = false; // indicates whether onRebind should be used
+  boolean mAllowRebind = false; // indicates whether onRebind should be used
 
     @Override
     public void onCreate() {
-        // The service is being created    
-    	mPrefs = PreferenceManager.getDefaultSharedPreferences(getApplication());
+      // The service is being created    
     	dbA = new DatabaseAccessor(this);
     	listOfSummoners = dbA.getAllSummoners();
     	listeners = new ArrayList<IPlayerActivityListener>();
-    	for (SummonerDto summoner : listOfSummoners) {
-    		listeners.add(new GameStateListener(summoner));
+    	for (Summoner summoner : listOfSummoners) {
+    		listeners.add(new LastGameListener(summoner));
     	}
-    	Log.i("FeedUpdateService", "onCreate complete");
+    	Log.i(TAG, "onCreate complete");
     }
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        // The service is starting, due to a call to startService()
-    	handle = scheduler.scheduleWithFixedDelay(update, 0, 1200, TimeUnit.MILLISECONDS);
-    	Log.i("FeedUpdateService", "onStartCommand complete");
-        return mStartMode;
+    public int onStartCommand(Intent intent, int flags, int startId) {      
+      if (intent.getAction().equals("Initial")) {
+        //run cumulative update on the whole list
+        Log.i(TAG, "Running with initital intent");
+        listUpdateHandle = listUpdateScheduler.scheduleWithFixedDelay(updateList, 0, 30, TimeUnit.SECONDS);
+      }
+      else if (intent.getAction().equals("NewSummoner")) {
+        //get summoner details from intent and add to list
+        Log.i(TAG, "Adding new summoner in service");
+        Summoner summoner = new Summoner();
+        summoner.id = intent.getLongExtra("id", 0);   
+        listOfSummoners.add(summoner);
+        listeners.add(new LastGameListener(summoner));
+      }
+    	Log.i(TAG, "onStartCommand complete");
+      return mStartMode;
     }
     @Override
     public IBinder onBind(Intent intent) {
@@ -89,7 +123,7 @@ public class FeedUpdateService extends Service {
     @Override
     public void onDestroy() {
         // The service is no longer used and is being destroyed
-    	handle.cancel(true);
+    	listUpdateHandle.cancel(true);
+    	listUpdateScheduler.shutdown();
     }
-
 }

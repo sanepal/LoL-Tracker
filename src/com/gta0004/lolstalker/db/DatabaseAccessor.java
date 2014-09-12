@@ -12,7 +12,7 @@ import android.database.sqlite.SQLiteQueryBuilder;
 import android.util.Log;
 
 import com.gta0004.lolstalker.riot.LastMatch;
-import com.gta0004.lolstalker.riot.SummonerDto;
+import com.gta0004.lolstalker.riot.Summoner;
 
 public class DatabaseAccessor {
   private SQLiteDatabase database;
@@ -30,14 +30,14 @@ public class DatabaseAccessor {
     dbHelper.close();
   }
 
-  public void insertNewSummoner(SummonerDto summoner) {
+  public void insertNewSummoner(Summoner summoner) {
     ContentValues values = new ContentValues();
     values.put(DatabaseHelper.COLUMN_SUMM_ID, summoner.id);
     values.put(DatabaseHelper.COLUMN_SUMM_NAME, summoner.name);
-    values.put(DatabaseHelper.COLUMN_SUMM_IC, summoner.profileIconId);
-    values.put(DatabaseHelper.COLUMN_SUMM_REV, summoner.revisionDate);
-    values.put(DatabaseHelper.COLUMN_SUMM_LEVEL, summoner.summonerLevel);
-    values.put(DatabaseHelper.COLUMN_SUMM_LAST, summoner.lastMatch.matchId);
+    //values.put(DatabaseHelper.COLUMN_SUMM_IC, summoner.profileIconId);
+    //values.put(DatabaseHelper.COLUMN_SUMM_REV, summoner.revisionDate);
+    //values.put(DatabaseHelper.COLUMN_SUMM_LEVEL, summoner.summonerLevel);
+    //values.put(DatabaseHelper.COLUMN_SUMM_LAST, summoner.lastMatch.matchId);
 
     // Open the database
     open();
@@ -49,8 +49,8 @@ public class DatabaseAccessor {
     close();
   }
 
-  public List<SummonerDto> getAllSummoners() {
-    List<SummonerDto> list = new ArrayList<SummonerDto>();
+  public List<Summoner> getAllSummoners() {
+    List<Summoner> list = new ArrayList<Summoner>();
 
     open();
     /*
@@ -63,15 +63,14 @@ public class DatabaseAccessor {
     query.setTables(DatabaseHelper.TABLE_TARGETS);
 
     Cursor cursor = query.query(database, new String[] { DatabaseHelper.COLUMN_SUMM_ID,
-        DatabaseHelper.COLUMN_SUMM_NAME, DatabaseHelper.COLUMN_SUMM_IC, DatabaseHelper.COLUMN_SUMM_REV,
-        DatabaseHelper.COLUMN_SUMM_LEVEL, DatabaseHelper.COLUMN_SUMM_LAST, }, null, null, null, null, null);
+        DatabaseHelper.COLUMN_SUMM_NAME//, DatabaseHelper.COLUMN_SUMM_IC, DatabaseHelper.COLUMN_SUMM_REV,
+        /*DatabaseHelper.COLUMN_SUMM_LEVEL, DatabaseHelper.COLUMN_SUMM_LAST,*/ }, null, null, null, null, null);
 
     cursor.moveToFirst();
     while (!cursor.isAfterLast()) {
-      SummonerDto summoner = new SummonerDto(cursor.getLong(0), cursor.getString(1), cursor.getInt(2),
-          cursor.getLong(3), cursor.getInt(4));
-      summoner.lastMatch = new LastMatch();
-      summoner.lastMatch.matchId = cursor.getLong(5);
+      Summoner summoner = new Summoner(cursor.getLong(0), cursor.getString(1));
+      //summoner.lastMatch = new LastMatch();
+      //summoner.lastMatch.matchId = cursor.getLong(5);
       list.add(summoner);
       cursor.moveToNext();
     }
