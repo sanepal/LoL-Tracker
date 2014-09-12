@@ -97,8 +97,7 @@ public class FeedUpdateService extends Service {
       else if (intent.getAction().equals("NewSummoner")) {
         //get summoner details from intent and add to list
         Log.i(TAG, "Adding new summoner in service");
-        Summoner summoner = new Summoner();
-        summoner.id = intent.getLongExtra("id", 0);   
+        Summoner summoner = intent.getParcelableExtra("summoner");
         listOfSummoners.add(summoner);
         listeners.add(new LastGameListener(summoner));
       }

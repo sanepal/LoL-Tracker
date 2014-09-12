@@ -1,6 +1,9 @@
 package com.gta0004.lolstalker.riot;
 
-public class Summoner {
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class Summoner implements Parcelable{
   public long id;
   public String name;
   public int profileIconId;
@@ -27,5 +30,37 @@ public class Summoner {
 
   public String toString() {
     return name;
+  }
+
+  @Override
+  public int describeContents() {
+    return 0;
+  }
+
+  @Override
+  public void writeToParcel(Parcel dest, int flags) {
+    dest.writeLong(id);
+    dest.writeString(name);
+    dest.writeInt(profileIconId);
+    dest.writeInt(summonerLevel);
+    dest.writeParcelable(lastMatch, flags);    
+  }
+  
+  public static final Parcelable.Creator<Summoner> CREATOR = new Parcelable.Creator<Summoner>() {
+    public Summoner createFromParcel(Parcel in) {
+      return new Summoner(in);
+    }
+
+    public Summoner[] newArray(int size) {
+      return new Summoner[size];
+    }
+  };
+
+  private Summoner(Parcel in) {
+    id = in.readLong();
+    name = in.readString();
+    profileIconId = in.readInt();
+    summonerLevel = in.readInt();
+    lastMatch = in.readParcelable(LastMatch.class.getClassLoader());
   }
 }

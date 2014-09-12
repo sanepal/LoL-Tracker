@@ -168,7 +168,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     adapterForSummoners.notifyDataSetChanged();
     Intent intent = new Intent(this, FeedUpdateService.class);
     intent.setAction("NewSummoner");
-    intent.putExtra("id", summoner.id);
+    intent.putExtra("summoner", summoner);
     startService(intent);
   }
 

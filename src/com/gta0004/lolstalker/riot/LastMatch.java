@@ -1,6 +1,9 @@
 package com.gta0004.lolstalker.riot;
 
-public class LastMatch {
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class LastMatch implements Parcelable{
   public long matchId;
   public String queueType;
   public boolean winner;
@@ -8,5 +11,35 @@ public class LastMatch {
 
   public LastMatch() {
 
+  }
+
+  @Override
+  public int describeContents() {
+    return 0;
+  }
+
+  @Override
+  public void writeToParcel(Parcel dest, int flags) {
+    dest.writeLong(matchId);
+    dest.writeString(queueType);
+    dest.writeInt(winner ? 1 : 0);
+    dest.writeInt(pentakills);    
+  }
+  
+  public static final Parcelable.Creator<LastMatch> CREATOR = new Parcelable.Creator<LastMatch>() {
+    public LastMatch createFromParcel(Parcel in) {
+      return new LastMatch(in);
+    }
+
+    public LastMatch[] newArray(int size) {
+      return new LastMatch[size];
+    }
+  };
+
+  private LastMatch(Parcel in) {
+    matchId = in.readLong();
+    queueType = in.readString();
+    winner = (in.readInt() == 1);
+    pentakills = in.readInt();
   }
 }
