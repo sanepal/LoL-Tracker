@@ -15,10 +15,7 @@ import com.gta0004.lolstalker.riot.Summoner;
 
 import android.app.Service;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.os.Binder;
 import android.os.IBinder;
-import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -57,7 +54,7 @@ public class FeedUpdateService extends Service {
 			  //if state was changed, send the message back to the main activity
 			  //TODO if activity is in bg, send notification as well
 			  Intent intent = new Intent(MainActivity.NEW_FEED);
-			  intent.putExtra("Message", listener.getMessage());
+			  intent.putExtra("Message", listener.getEvent());
 			  LocalBroadcastManager.getInstance(getApplication()).sendBroadcast(intent);
 			} else {
 				Log.i(listener.getClass().getSimpleName(), "No change to listener.");
@@ -89,12 +86,12 @@ public class FeedUpdateService extends Service {
     }
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {      
-      if (intent.getAction().equals("Initial")) {
+      if (intent.getAction() != null && intent.getAction().equals("Initial")) {
         //run cumulative update on the whole list
         Log.i(TAG, "Running with initital intent");
         listUpdateHandle = listUpdateScheduler.scheduleWithFixedDelay(updateList, 0, 30, TimeUnit.SECONDS);
       }
-      else if (intent.getAction().equals("NewSummoner")) {
+      else if (intent.getAction() != null && intent.getAction().equals("NewSummoner")) {
         //get summoner details from intent and add to list
         Log.i(TAG, "Adding new summoner in service");
         Summoner summoner = intent.getParcelableExtra("summoner");

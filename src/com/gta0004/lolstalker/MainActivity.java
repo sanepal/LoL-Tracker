@@ -45,7 +45,10 @@ import android.widget.Toast;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.gta0004.lolstalker.adapters.FeedArrayAdapter;
+import com.gta0004.lolstalker.adapters.SummonerArrayAdapter;
 import com.gta0004.lolstalker.db.DatabaseAccessor;
+import com.gta0004.lolstalker.events.IEvent;
 import com.gta0004.lolstalker.riot.LastMatch;
 import com.gta0004.lolstalker.riot.Summoner;
 import com.gta0004.lolstalker.service.FeedUpdateService;
@@ -62,17 +65,25 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
   private NavigationDrawerFragment mNavigationDrawerFragment;
   private List<Summoner> listOfSummoners = null;
   private static ArrayAdapter<Summoner> adapterForSummoners = null;
-  private FeedUpdateService service;
-  private List<String> feed = null;
-  private static ArrayAdapter<String> feedAdapter = null;
+  private List<IEvent> feed = null;
+  private static ArrayAdapter<IEvent> adapterForEvents = null;
   private DatabaseAccessor dbA;
+  private static HttpClient httpclient;
+  static {
+    HttpParams httpParameters = new BasicHttpParams();
+    int timeoutConnection = 3000;
+    HttpConnectionParams.setConnectionTimeout(httpParameters, timeoutConnection);
+    int timeoutSocket = 5000;
+    HttpConnectionParams.setSoTimeout(httpParameters, timeoutSocket);
+    httpclient = new DefaultHttpClient(httpParameters);
+  }
   private BroadcastReceiver bReceiver = new BroadcastReceiver() {
 
     @Override
     public void onReceive(Context context, Intent intent) {
       if(intent.getAction().equals(NEW_FEED)) {
-        String message = intent.getStringExtra("Message");
-        addToFeed(message);
+        IEvent event = intent.getParcelableExtra("Message");
+        addToFeed(event);
       }      
     }
     
@@ -174,28 +185,27 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
 
   private void getInitialSummoners() {
     listOfSummoners = dbA.getAllSummoners();
-    adapterForSummoners = new ArrayAdapter<Summoner>(this, android.R.layout.simple_list_item_1,
-        listOfSummoners);
+    adapterForSummoners = new SummonerArrayAdapter(this, listOfSummoners);
 
   }
 
-  private void addToFeed(Summoner summoner) {
-    feedAdapter.add("Last match was " + summoner.lastMatch.matchId + " that resulted in a "
-        + summoner.lastMatch.winner + " with " + summoner.lastMatch.pentakills + " pentakills.");
-    feedAdapter.notifyDataSetChanged();
-  }
+  /*private void addToFeed(Summoner summoner) {
+    //adapterForEvents.add("Last match was " + summoner.lastMatch.matchId + " that resulted in a "
+    //    + summoner.lastMatch.winner + " with " + summoner.lastMatch.pentakills + " pentakills.");
+    //adapterForEvents.notifyDataSetChanged();
+  }*/
   
-  private void addToFeed(String message) {
-    feedAdapter.add(message);
-    feedAdapter.notifyDataSetChanged();
+  private void addToFeed(IEvent event) {
+    adapterForEvents.insert(event, 0);
+    adapterForEvents.notifyDataSetChanged();
   }
 
   private void getInititalFeed() {
-    feed = new ArrayList<String>();
+    feed = new ArrayList<IEvent>();
     /*for (Summoner summoner : listOfSummoners) {
       feed.add("Last Match was " + summoner.lastMatch.matchId);
     }*/
-    feedAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, feed);
+    adapterForEvents = new FeedArrayAdapter(this, feed);
   }
 
   /**
@@ -228,7 +238,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
       if (this.getArguments().get(ARG_SECTION_NUMBER).equals(1)) {
         listView.setAdapter(adapterForSummoners);
       } else if (this.getArguments().get(ARG_SECTION_NUMBER).equals(2)) {
-        listView.setAdapter(feedAdapter);
+        listView.setAdapter(adapterForEvents);
       }
 
       return rootView;
@@ -266,20 +276,12 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     protected Summoner doInBackground(String... params) {
       String name = params[0];
       name = name.replace(" ", "");
-      HttpParams httpParameters = new BasicHttpParams();
-      HttpClient httpclient = null;
       HttpGet request = new HttpGet();
       HttpResponse response = null;
       JsonParser parser = new JsonParser();
       JsonObject jsonObj = null;
       Gson gson = new Gson();
-      try {        
-        int timeoutConnection = 3000;
-        HttpConnectionParams.setConnectionTimeout(httpParameters, timeoutConnection);
-        int timeoutSocket = 5000;
-        HttpConnectionParams.setSoTimeout(httpParameters, timeoutSocket);
-        httpclient = new DefaultHttpClient(httpParameters);
-
+      try {
         URI website = new URI("https://na.api.pvp.net/api/lol/na/v1.4/summoner/by-name/" + name + "?"
             + Constants.KEY_PARAM);
         Log.i(TAG, website.toString());
@@ -314,12 +316,13 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
           jsonObj = parser.parse(jsonStr).getAsJsonObject();
           jsonObj = jsonObj.get("matches").getAsJsonArray().get(0).getAsJsonObject();
           LastMatch lastMatch = new LastMatch();
-          lastMatch.matchId = jsonObj.get("matchId").getAsLong();
+          /*lastMatch.matchId = jsonObj.get("matchId").getAsLong();
           lastMatch.queueType = jsonObj.get("queueType").getAsString();
           jsonObj = jsonObj.get("participants").getAsJsonArray().get(0).getAsJsonObject();
           jsonObj = jsonObj.get("stats").getAsJsonObject();
           lastMatch.winner = jsonObj.get("winner").getAsBoolean();
-          lastMatch.pentakills = jsonObj.get("pentaKills").getAsInt();
+          lastMatch.pentakills = jsonObj.get("pentaKills").getAsInt();*/
+          lastMatch.matchId = 0;
           summoner.lastMatch = lastMatch;
           result = NameLookupResponseCode.SUCCESS;
           return summoner;

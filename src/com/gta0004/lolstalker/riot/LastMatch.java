@@ -8,6 +8,9 @@ public class LastMatch implements Parcelable{
   public String queueType;
   public boolean winner;
   public int pentakills;
+  public int champId;
+  public long matchCreation;
+  public long matchDuration;
 
   public LastMatch() {
 
@@ -23,7 +26,10 @@ public class LastMatch implements Parcelable{
     dest.writeLong(matchId);
     dest.writeString(queueType);
     dest.writeInt(winner ? 1 : 0);
-    dest.writeInt(pentakills);    
+    dest.writeInt(pentakills);   
+    dest.writeInt(champId);
+    dest.writeLong(matchCreation);
+    dest.writeLong(matchDuration);
   }
   
   public static final Parcelable.Creator<LastMatch> CREATOR = new Parcelable.Creator<LastMatch>() {
@@ -41,5 +47,12 @@ public class LastMatch implements Parcelable{
     queueType = in.readString();
     winner = (in.readInt() == 1);
     pentakills = in.readInt();
+    champId = in.readInt();
+    matchCreation = in.readLong();
+    matchDuration = in.readLong();
+  }
+  
+  public long getMatchFinish() {
+    return matchCreation + matchDuration;
   }
 }

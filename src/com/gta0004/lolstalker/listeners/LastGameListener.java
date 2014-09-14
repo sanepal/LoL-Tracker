@@ -15,6 +15,9 @@ import android.util.Log;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.gta0004.lolstalker.events.IEvent;
+import com.gta0004.lolstalker.events.LastGameEvent;
+import com.gta0004.lolstalker.riot.LastMatch;
 import com.gta0004.lolstalker.riot.Summoner;
 import com.gta0004.lolstalker.utils.Constants;
 
@@ -70,6 +73,16 @@ public class LastGameListener extends AbstractPlayerActivityListener {
       stateChanged = mostRecentMatchId != lastMatchId;
       if (stateChanged) {
         lastMatchId = mostRecentMatchId;
+        LastMatch newMatch = new LastMatch();
+        newMatch.matchId = lastMatchId;
+        newMatch.matchCreation = jsonObj.get("matchCreation").getAsLong();
+        newMatch.matchDuration = jsonObj.get("matchDuration").getAsLong();
+        jsonObj = jsonObj.get("participants").getAsJsonArray().get(0).getAsJsonObject();
+        newMatch.champId = jsonObj.get("championId").getAsInt();
+        jsonObj = jsonObj.get("stats").getAsJsonObject();
+        newMatch.winner = jsonObj.get("winner").getAsBoolean();
+        newMatch.pentakills = jsonObj.get("pentaKills").getAsInt();
+        summoner.lastMatch = newMatch;
       }
     } catch (Exception e) {
       Log.e(TAG, "Error in http connection " + e.toString());
@@ -85,5 +98,10 @@ public class LastGameListener extends AbstractPlayerActivityListener {
   @Override
   public String getMessage() {
     return summoner.name + " just finished a game!";
+  }
+  
+  @Override
+  public IEvent getEvent() {
+    return new LastGameEvent(summoner);
   }
 }
