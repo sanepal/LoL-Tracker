@@ -9,13 +9,21 @@ import java.util.concurrent.TimeUnit;
 
 import com.gta0004.lolstalker.MainActivity;
 import com.gta0004.lolstalker.db.DatabaseAccessor;
+import com.gta0004.lolstalker.events.IEvent;
 import com.gta0004.lolstalker.listeners.LastGameListener;
 import com.gta0004.lolstalker.listeners.IPlayerActivityListener;
 import com.gta0004.lolstalker.riot.Summoner;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -53,13 +61,51 @@ public class FeedUpdateService extends Service {
 			  Log.i(listener.getClass().getSimpleName(), "Listener state was changed.");
 			  //if state was changed, send the message back to the main activity
 			  //TODO if activity is in bg, send notification as well
-			  Intent intent = new Intent(MainActivity.NEW_FEED);
-			  intent.putExtra("Message", listener.getEvent());
-			  LocalBroadcastManager.getInstance(getApplication()).sendBroadcast(intent);
+			  IEvent event = listener.getEvent();
+			  notifyActivity(event);
+			  if (!mPrefs.getBoolean("isInForeground", true))
+			    sendNotification(event);
 			} else {
 				Log.i(listener.getClass().getSimpleName(), "No change to listener.");
 			}	
 		}
+		
+		private void notifyActivity(IEvent event) {
+		  Intent intent = new Intent(MainActivity.NEW_FEED);
+      intent.putExtra("Message",event);
+      LocalBroadcastManager.getInstance(getApplication()).sendBroadcast(intent);
+		}
+
+    private void sendNotification(IEvent event) {
+      NotificationCompat.Builder mBuilder =
+          new NotificationCompat.Builder(getApplication())
+          .setSmallIcon(com.gta0004.lolstalker.R.drawable.ic_launcher)
+          .setContentTitle("My notification")
+          .setContentText(event.getMessage());
+      // Creates an explicit intent for an Activity in your app
+      Intent resultIntent = new Intent(getApplication(), MainActivity.class);
+    
+      // The stack builder object will contain an artificial back stack for the
+      // started Activity.
+      // This ensures that navigating backward from the Activity leads out of
+      // your application to the Home screen.
+      TaskStackBuilder stackBuilder = TaskStackBuilder.create(getApplication());
+      // Adds the back stack for the Intent (but not the Intent itself)
+      stackBuilder.addParentStack(MainActivity.class);
+      // Adds the Intent that starts the Activity to the top of the stack
+      stackBuilder.addNextIntent(resultIntent);
+      PendingIntent resultPendingIntent =
+              stackBuilder.getPendingIntent(
+                  0,
+                  PendingIntent.FLAG_UPDATE_CURRENT
+              );
+      mBuilder.setContentIntent(resultPendingIntent);
+      NotificationManager mNotificationManager =
+          (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+      // mId allows you to update the notification later on.
+      mNotificationManager.notify(1, mBuilder.build());
+      
+    }
 		
 	};
 	private ScheduledFuture listUpdateHandle = null;
@@ -68,6 +114,7 @@ public class FeedUpdateService extends Service {
 	private List<Summoner> listOfSummoners;
 	private List<IPlayerActivityListener> listeners;
 	private int currIndex = 0;
+	private SharedPreferences mPrefs;
 	
 
 	int mStartMode = Service.START_STICKY;       // indicates how to behave if the service is killed
@@ -75,7 +122,8 @@ public class FeedUpdateService extends Service {
 
     @Override
     public void onCreate() {
-      // The service is being created    
+      // The service is being created   
+      mPrefs = PreferenceManager.getDefaultSharedPreferences(getApplication());
     	dbA = new DatabaseAccessor(this);
     	listOfSummoners = dbA.getAllSummoners();
     	listeners = new ArrayList<IPlayerActivityListener>();
@@ -86,12 +134,12 @@ public class FeedUpdateService extends Service {
     }
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {      
-      if (intent.getAction() != null && intent.getAction().equals("Initial")) {
+      if (intent != null && intent.getAction().equals("Initial")) {
         //run cumulative update on the whole list
         Log.i(TAG, "Running with initital intent");
         listUpdateHandle = listUpdateScheduler.scheduleWithFixedDelay(updateList, 0, 30, TimeUnit.SECONDS);
       }
-      else if (intent.getAction() != null && intent.getAction().equals("NewSummoner")) {
+      else if (intent != null && intent.getAction().equals("NewSummoner")) {
         //get summoner details from intent and add to list
         Log.i(TAG, "Adding new summoner in service");
         Summoner summoner = intent.getParcelableExtra("summoner");

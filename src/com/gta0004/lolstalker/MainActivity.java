@@ -26,8 +26,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.DrawerLayout;
 import android.util.Log;
@@ -63,11 +65,12 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
   public static final String NEW_FEED = "com.gta0004.lolstalker.NEW_FEED"; 
   private static final String TAG = "MainActivity";
   private NavigationDrawerFragment mNavigationDrawerFragment;
-  private List<Summoner> listOfSummoners = null;
+  private ArrayList<Summoner> summoners = null;
   private static ArrayAdapter<Summoner> adapterForSummoners = null;
-  private List<IEvent> feed = null;
+  private ArrayList<IEvent> events = null;
   private static ArrayAdapter<IEvent> adapterForEvents = null;
   private DatabaseAccessor dbA;
+  private SharedPreferences mPrefs;
   private static HttpClient httpclient;
   static {
     HttpParams httpParameters = new BasicHttpParams();
@@ -83,7 +86,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     public void onReceive(Context context, Intent intent) {
       if(intent.getAction().equals(NEW_FEED)) {
         IEvent event = intent.getParcelableExtra("Message");
-        addToFeed(event);
+        addNewEvent(event);
       }      
     }
     
@@ -99,7 +102,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
-
+    mPrefs = PreferenceManager.getDefaultSharedPreferences(getApplication());
     mNavigationDrawerFragment = (NavigationDrawerFragment) getFragmentManager().findFragmentById(
         R.id.navigation_drawer);
     mTitle = getTitle();
@@ -107,8 +110,12 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     // Set up the drawer.
     mNavigationDrawerFragment.setUp(R.id.navigation_drawer, (DrawerLayout) findViewById(R.id.drawer_layout));
     dbA = new DatabaseAccessor(this);
-    getInitialSummoners();
-    getInititalFeed();
+    if (savedInstanceState != null) {
+      restoreFromBundle(savedInstanceState);
+    }
+    else {
+      getInitialData();
+    }    
     LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(this);
     IntentFilter intentFilter = new IntentFilter();
     intentFilter.addAction(NEW_FEED);
@@ -116,6 +123,30 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     Intent intent = new Intent(this, FeedUpdateService.class);
     intent.setAction("Initial");
     startService(intent);
+  }
+  
+  @Override
+  public void onSaveInstanceState(Bundle savedInstanceState) {
+      // Save the user's current game state
+      savedInstanceState.putParcelableArrayList("SummonerList", summoners);
+      savedInstanceState.putParcelableArrayList("EventList", events);
+      
+      // Always call the superclass so it can save the view hierarchy state
+      super.onSaveInstanceState(savedInstanceState);
+  }
+  
+  @Override
+  protected void onPause() {
+      super.onPause();
+      Log.i(TAG, "In background");
+      mPrefs.edit().putBoolean("isInForeground", false).commit();
+  }
+
+  @Override
+  protected void onResume() {
+      super.onResume();
+      Log.i(TAG, "In foreground");
+      mPrefs.edit().putBoolean("isInForeground", true).commit();
   }
 
   @Override
@@ -182,30 +213,26 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     intent.putExtra("summoner", summoner);
     startService(intent);
   }
-
-  private void getInitialSummoners() {
-    listOfSummoners = dbA.getAllSummoners();
-    adapterForSummoners = new SummonerArrayAdapter(this, listOfSummoners);
-
-  }
-
-  /*private void addToFeed(Summoner summoner) {
-    //adapterForEvents.add("Last match was " + summoner.lastMatch.matchId + " that resulted in a "
-    //    + summoner.lastMatch.winner + " with " + summoner.lastMatch.pentakills + " pentakills.");
-    //adapterForEvents.notifyDataSetChanged();
-  }*/
   
-  private void addToFeed(IEvent event) {
+  private void addNewEvent(IEvent event) {
     adapterForEvents.insert(event, 0);
     adapterForEvents.notifyDataSetChanged();
   }
-
-  private void getInititalFeed() {
-    feed = new ArrayList<IEvent>();
-    /*for (Summoner summoner : listOfSummoners) {
-      feed.add("Last Match was " + summoner.lastMatch.matchId);
-    }*/
-    adapterForEvents = new FeedArrayAdapter(this, feed);
+  
+  private void getInitialData() {
+    events = new ArrayList<IEvent>();
+    summoners = dbA.getAllSummoners();
+    
+    adapterForSummoners = new SummonerArrayAdapter(this, summoners);
+    adapterForEvents = new FeedArrayAdapter(this, events);
+  }
+  
+  private void restoreFromBundle(Bundle savedInstanceState) {
+    summoners = savedInstanceState.getParcelableArrayList("SummonerList");
+    events = savedInstanceState.getParcelableArrayList("EventList");
+    
+    adapterForSummoners = new SummonerArrayAdapter(this, summoners);
+    adapterForEvents = new FeedArrayAdapter(this, events);
   }
 
   /**

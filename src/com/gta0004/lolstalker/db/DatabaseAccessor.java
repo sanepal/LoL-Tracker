@@ -1,7 +1,6 @@
 package com.gta0004.lolstalker.db;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -9,9 +8,7 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
-import android.util.Log;
 
-import com.gta0004.lolstalker.riot.LastMatch;
 import com.gta0004.lolstalker.riot.Summoner;
 
 public class DatabaseAccessor {
@@ -49,8 +46,8 @@ public class DatabaseAccessor {
     close();
   }
 
-  public List<Summoner> getAllSummoners() {
-    List<Summoner> list = new ArrayList<Summoner>();
+  public ArrayList<Summoner> getAllSummoners() {
+    ArrayList<Summoner> list = new ArrayList<Summoner>();
 
     open();
     /*
