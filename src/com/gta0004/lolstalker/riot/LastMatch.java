@@ -53,6 +53,6 @@ public class LastMatch implements Parcelable{
   }
   
   public long getMatchFinish() {
-    return matchCreation + matchDuration;
+    return matchCreation + (matchDuration*1000);
   }
 }
