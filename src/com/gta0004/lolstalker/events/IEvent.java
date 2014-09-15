@@ -4,8 +4,10 @@ import android.os.Parcelable;
 
 public interface IEvent extends Parcelable{
   
-  public String getEventTime();
+  public String getFormattedEventTime();
+  public long getEventTime();
   public int getEventType();
   public String getMessage();
+  public int compareTo(IEvent rhs);
 
 }

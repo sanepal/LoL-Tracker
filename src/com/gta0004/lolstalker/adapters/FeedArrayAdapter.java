@@ -1,5 +1,7 @@
 package com.gta0004.lolstalker.adapters;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import com.gta0004.lolstalker.events.IEvent;
@@ -13,7 +15,7 @@ import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 public class FeedArrayAdapter extends ArrayAdapter<IEvent>{
-
+  
   private Context context;
   private List<IEvent> objects;
 
@@ -36,7 +38,7 @@ public class FeedArrayAdapter extends ArrayAdapter<IEvent>{
     IEvent event = objects.get(position);
     //populate text fields
     TextView time = (TextView) convertView.findViewById(android.R.id.text2);
-    time.setText(event.getEventTime());
+    time.setText(event.getFormattedEventTime());
     TextView main  = (TextView) convertView.findViewById(android.R.id.text1);
     main.setText(event.getMessage());
     
@@ -59,6 +61,19 @@ public class FeedArrayAdapter extends ArrayAdapter<IEvent>{
     //convertView.setPadding(0, 5, 0, 5);
     
     return convertView;
+  }
+  
+  @Override
+  public void notifyDataSetChanged() {
+    Collections.sort(objects, new Comparator<IEvent>() {
+
+      @Override
+      public int compare(IEvent lhs, IEvent rhs) {
+        return (-1) * lhs.compareTo(rhs);
+      }
+      
+    });
+    super.notifyDataSetChanged();
   }
   
 }

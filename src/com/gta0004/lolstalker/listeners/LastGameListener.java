@@ -63,7 +63,14 @@ public class LastGameListener extends AbstractPlayerActivityListener {
     try {
       request.setURI(website);
       response = httpclient.execute(request);
-      Log.i(TAG, "Last Match response " + response.getStatusLine().getStatusCode());
+      int responseCode = response.getStatusLine().getStatusCode();
+      Log.i(TAG, "Last Match response " + responseCode);      
+      if (responseCode / 100 != 2) {
+        Log.i(TAG, "Unsuccessful request");
+        response.getEntity().consumeContent();
+        stateChanged = false;
+        return;
+      }
       String jsonStr = EntityUtils.toString(response.getEntity());
       jsonObj = parser.parse(jsonStr).getAsJsonObject();
       jsonObj = jsonObj.get("matches").getAsJsonArray().get(0).getAsJsonObject();

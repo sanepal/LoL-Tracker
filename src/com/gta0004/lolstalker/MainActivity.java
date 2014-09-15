@@ -63,6 +63,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
    * navigation drawer.
    */
   public static final String NEW_FEED = "com.gta0004.lolstalker.NEW_FEED"; 
+  public static final String UPDATED_FEED = "com.gta0004.lolstalker.UPDATED_FEED";
   private static final String TAG = "MainActivity";
   private NavigationDrawerFragment mNavigationDrawerFragment;
   private ArrayList<Summoner> summoners = null;
@@ -80,16 +81,23 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     HttpConnectionParams.setSoTimeout(httpParameters, timeoutSocket);
     httpclient = new DefaultHttpClient(httpParameters);
   }
+  private static LocalBroadcastManager bManager = null;
   private BroadcastReceiver bReceiver = new BroadcastReceiver() {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+      Log.i(TAG, intent.getAction());
       if(intent.getAction().equals(NEW_FEED)) {
         IEvent event = intent.getParcelableExtra("Message");
         addNewEvent(event);
-      }      
+      }  
+      else if (intent.getAction().equals(UPDATED_FEED)) {
+        ArrayList<IEvent> received = intent.getParcelableArrayListExtra("Message");
+        adapterForEvents.addAll(received);
+        adapterForEvents.notifyDataSetChanged();
+      }
     }
-    
+
   };
 
   /**
@@ -106,47 +114,66 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     mNavigationDrawerFragment = (NavigationDrawerFragment) getFragmentManager().findFragmentById(
         R.id.navigation_drawer);
     mTitle = getTitle();
-
     // Set up the drawer.
     mNavigationDrawerFragment.setUp(R.id.navigation_drawer, (DrawerLayout) findViewById(R.id.drawer_layout));
-    dbA = new DatabaseAccessor(this);
+    
+    dbA = new DatabaseAccessor(this);   
+    
+    //if data was saved in the instance state, restore from there
     if (savedInstanceState != null) {
+      //Log.i(TAG, "Restoring data from savedInstanceState");
       restoreFromBundle(savedInstanceState);
     }
     else {
-      getInitialData();
+      getInitialData();   
+      //service is still running, get updated feed from there
+      if (FeedUpdateService.isInstanceCreated()) {
+        //Log.i(TAG, "Requesting feed from service");
+        Intent intent = new Intent(this, FeedUpdateService.class);
+        intent.setAction("RequestEventList");
+        startService(intent);
+      }
     }    
-    LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(this);
-    IntentFilter intentFilter = new IntentFilter();
-    intentFilter.addAction(NEW_FEED);
-    bManager.registerReceiver(bReceiver, intentFilter);
-    Intent intent = new Intent(this, FeedUpdateService.class);
-    intent.setAction("Initial");
-    startService(intent);
+    
+    //start service if service is not running
+    if (!FeedUpdateService.isInstanceCreated()) {     
+      //Log.i(TAG, "Starting intent for the first time");
+      Intent intent = new Intent(this, FeedUpdateService.class);
+      intent.setAction("Initial");
+      startService(intent);
+    }
+    
+    if (bManager == null) {
+      bManager = LocalBroadcastManager.getInstance(this);
+      IntentFilter intentFilter = new IntentFilter();
+      intentFilter.addAction(NEW_FEED);
+      intentFilter.addAction(UPDATED_FEED);
+      bManager.registerReceiver(bReceiver, intentFilter);
+    }    
   }
-  
+
   @Override
   public void onSaveInstanceState(Bundle savedInstanceState) {
-      // Save the user's current game state
-      savedInstanceState.putParcelableArrayList("SummonerList", summoners);
-      savedInstanceState.putParcelableArrayList("EventList", events);
-      
-      // Always call the superclass so it can save the view hierarchy state
-      super.onSaveInstanceState(savedInstanceState);
+    // Save the user's current game state
+    savedInstanceState.putParcelableArrayList("SummonerList", summoners);
+    savedInstanceState.putParcelableArrayList("EventList", events);
+
+    // Always call the superclass so it can save the view hierarchy state
+    super.onSaveInstanceState(savedInstanceState);
   }
-  
+
   @Override
   protected void onPause() {
-      super.onPause();
-      Log.i(TAG, "In background");
-      mPrefs.edit().putBoolean("isInForeground", false).commit();
+    //activity is not in foreground anymore
+    mPrefs.edit().putBoolean("isInForeground", false).commit();
+    super.onPause();    
   }
 
   @Override
   protected void onResume() {
-      super.onResume();
-      Log.i(TAG, "In foreground");
-      mPrefs.edit().putBoolean("isInForeground", true).commit();
+    super.onResume();
+    //activity is in foreground
+    mPrefs.edit().putBoolean("isInForeground", true).commit();  
   }
 
   @Override
@@ -154,7 +181,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     // update the main content by replacing fragments
     FragmentManager fragmentManager = getFragmentManager();
     fragmentManager.beginTransaction().replace(R.id.container, PlaceholderFragment.newInstance(position + 1))
-        .commit();
+    .commit();
   }
 
   public void onSectionAttached(int number) {
@@ -213,24 +240,24 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     intent.putExtra("summoner", summoner);
     startService(intent);
   }
-  
+
   private void addNewEvent(IEvent event) {
     adapterForEvents.insert(event, 0);
     adapterForEvents.notifyDataSetChanged();
   }
-  
+
   private void getInitialData() {
     events = new ArrayList<IEvent>();
     summoners = dbA.getAllSummoners();
-    
+
     adapterForSummoners = new SummonerArrayAdapter(this, summoners);
     adapterForEvents = new FeedArrayAdapter(this, events);
   }
-  
+
   private void restoreFromBundle(Bundle savedInstanceState) {
     summoners = savedInstanceState.getParcelableArrayList("SummonerList");
     events = savedInstanceState.getParcelableArrayList("EventList");
-    
+
     adapterForSummoners = new SummonerArrayAdapter(this, summoners);
     adapterForEvents = new FeedArrayAdapter(this, events);
   }
@@ -298,7 +325,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
   public class VerifyNameTask extends AsyncTask<String, Void, Summoner> {
 
     private NameLookupResponseCode result;
-    
+
     @Override
     protected Summoner doInBackground(String... params) {
       String name = params[0];
@@ -312,7 +339,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
         URI website = new URI("https://na.api.pvp.net/api/lol/na/v1.4/summoner/by-name/" + name + "?"
             + Constants.KEY_PARAM);
         Log.i(TAG, website.toString());
-        
+
         request.setURI(website);
         response = httpclient.execute(request);
         int responseCode = response.getStatusLine().getStatusCode();
