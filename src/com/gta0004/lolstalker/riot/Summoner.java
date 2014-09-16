@@ -6,6 +6,7 @@ import android.os.Parcelable;
 public class Summoner implements Parcelable{
   public long id;
   public String name;
+  public String region;
   public int profileIconId;
   public long revisionDate;
   public int summonerLevel;
@@ -41,6 +42,7 @@ public class Summoner implements Parcelable{
   public void writeToParcel(Parcel dest, int flags) {
     dest.writeLong(id);
     dest.writeString(name);
+    dest.writeString(region);
     dest.writeInt(profileIconId);
     dest.writeInt(summonerLevel);
     dest.writeParcelable(lastMatch, flags);    
@@ -59,6 +61,7 @@ public class Summoner implements Parcelable{
   private Summoner(Parcel in) {
     id = in.readLong();
     name = in.readString();
+    region = in.readString();
     profileIconId = in.readInt();
     summonerLevel = in.readInt();
     lastMatch = in.readParcelable(LastMatch.class.getClassLoader());

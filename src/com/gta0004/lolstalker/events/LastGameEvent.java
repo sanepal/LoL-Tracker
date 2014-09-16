@@ -10,14 +10,23 @@ import com.gta0004.lolstalker.utils.Constants;
 
 public class LastGameEvent implements IEvent {
   private static final String TAG = "LastGameEvent";
-  private Summoner summoner;
+  private String summonerName;
+  private boolean winner;
+  private int champId;
+  private long matchFinish;
   
   public LastGameEvent (Summoner summoner) {
-    this.summoner = summoner;
+    this.summonerName = summoner.name;
+    this.winner = summoner.lastMatch.winner;
+    this.champId = summoner.lastMatch.champId;
+    this.matchFinish = summoner.lastMatch.getMatchFinish();
   }
   
   private LastGameEvent(Parcel in) {    
-    summoner = in.readParcelable(Summoner.class.getClassLoader());
+    summonerName = in.readString();
+    winner = (in.readInt() == 1);
+    champId = in.readInt();
+    matchFinish = in.readLong();
   }
   
   @Override
@@ -27,7 +36,10 @@ public class LastGameEvent implements IEvent {
 
   @Override
   public void writeToParcel(Parcel dest, int flags) {
-    dest.writeParcelable(summoner, flags);    
+    dest.writeString(summonerName);
+    dest.writeInt(winner ? 1 : 0);
+    dest.writeInt(champId);
+    dest.writeLong(matchFinish);
   }
   
   public static final Parcelable.Creator<LastGameEvent> CREATOR = new Parcelable.Creator<LastGameEvent>() {
@@ -43,18 +55,18 @@ public class LastGameEvent implements IEvent {
   @Override
   public String getMessage() {
     String s = "";
-    s += summoner.name + " ";
-    if (summoner.lastMatch.winner)
+    s += summonerName + " ";
+    if (winner)
       s += "won a game ";
     else
       s += "lost a game ";
-    s += "as " + summoner.lastMatch.champId + ".";
+    s += "as " + champId + ".";
     return s;
   }
   
   @Override
   public int getEventType() {
-    if (summoner.lastMatch.winner)
+    if (winner)
       return Constants.EVENT_POSITIVE;
     else
       return Constants.EVENT_NEGATIVE;
@@ -62,12 +74,12 @@ public class LastGameEvent implements IEvent {
 
   @Override
   public String getFormattedEventTime() {
-    return DateUtils.getRelativeTimeSpanString(summoner.lastMatch.getMatchFinish()).toString();
+    return DateUtils.getRelativeTimeSpanString(matchFinish).toString();
   }
   
   @Override
   public long getEventTime() {
-    return summoner.lastMatch.getMatchFinish();
+    return matchFinish;
   }
   
   @Override

@@ -45,7 +45,7 @@ public class LastGameListener extends AbstractPlayerActivityListener {
       this.lastMatchId = this.summoner.lastMatch.matchId;
     }
     try {
-      website = new URI("https://na.api.pvp.net/api/lol/na/v2.2/matchhistory/" + summoner.id
+      website = new URI("https://"+summoner.region+".api.pvp.net/api/lol/"+summoner.region+"/v2.2/matchhistory/" + summoner.id
           + "?beginIndex=0&endIndex=1&" + Constants.KEY_PARAM);
     } catch (Exception e) {
       Log.e(TAG, "could not create URI for summoner: " + summoner.name, e);

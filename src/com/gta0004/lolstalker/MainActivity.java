@@ -42,6 +42,7 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -55,6 +56,7 @@ import com.gta0004.lolstalker.riot.LastMatch;
 import com.gta0004.lolstalker.riot.Summoner;
 import com.gta0004.lolstalker.service.FeedUpdateService;
 import com.gta0004.lolstalker.utils.Constants;
+import com.gta0004.lolstalker.utils.Region;
 
 public class MainActivity extends Activity implements NavigationDrawerFragment.NavigationDrawerCallbacks {
 
@@ -330,13 +332,14 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     protected Summoner doInBackground(String... params) {
       String name = params[0];
       name = name.replace(" ", "");
+      String region = params[1];
       HttpGet request = new HttpGet();
       HttpResponse response = null;
       JsonParser parser = new JsonParser();
       JsonObject jsonObj = null;
       Gson gson = new Gson();
       try {
-        URI website = new URI("https://na.api.pvp.net/api/lol/na/v1.4/summoner/by-name/" + name + "?"
+        URI website = new URI("https://"+region+".api.pvp.net/api/lol/"+region+"/v1.4/summoner/by-name/" + name + "?"
             + Constants.KEY_PARAM);
         Log.i(TAG, website.toString());
 
@@ -355,7 +358,8 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
           result = NameLookupResponseCode.BAD_SUMMONER_NAME;
           return null;
         }
-        website = new URI("https://na.api.pvp.net/api/lol/na/v2.2/matchhistory/" + summoner.id
+        summoner.region = region;
+        website = new URI("https://"+region+".api.pvp.net/api/lol/"+region+"/v2.2/matchhistory/" + summoner.id
             + "?beginIndex=0&endIndex=1&" + Constants.KEY_PARAM);
         request.setURI(website);
         response = httpclient.execute(request);
@@ -409,11 +413,12 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
       AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-      final EditText input = new EditText(getActivity());
-      LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-          LinearLayout.LayoutParams.MATCH_PARENT);
-      input.setLayoutParams(lp);
-      input.setLines(1);
+      LayoutInflater inflater =(LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE); 
+      View view = inflater.inflate(R.layout.request_name_dialog, null); 
+      final EditText input = (EditText) view.findViewById(R.id.name);
+      final Spinner region = (Spinner) view.findViewById(R.id.region);
+      region.setAdapter(new ArrayAdapter<Region>(this.getActivity(), android.R.layout.simple_spinner_dropdown_item, Region.values()));
+      region.setSelection(Region.NA.ordinal());
       builder.setTitle("Enter Summoner Name");
       builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
 
@@ -421,7 +426,8 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
         public void onClick(DialogInterface dialog, int which) {
           dialog.cancel();
           AsyncTask<String, ?, ?> task = new VerifyNameTask();
-          task.execute(input.getText().toString());
+          Region selected = (Region) region.getSelectedItem();
+          task.execute(input.getText().toString(), selected.getRegionCode());          
         }
       });
       builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -432,7 +438,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
         }
 
       });
-      builder.setView(input);
+      builder.setView(view);
       return builder.create();
     }
   }

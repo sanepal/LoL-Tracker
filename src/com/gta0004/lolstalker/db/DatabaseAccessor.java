@@ -31,10 +31,11 @@ public class DatabaseAccessor {
     ContentValues values = new ContentValues();
     values.put(DatabaseHelper.COLUMN_SUMM_ID, summoner.id);
     values.put(DatabaseHelper.COLUMN_SUMM_NAME, summoner.name);
-    //values.put(DatabaseHelper.COLUMN_SUMM_IC, summoner.profileIconId);
+    values.put(DatabaseHelper.COLUMN_SUMM_IC, summoner.profileIconId);
     //values.put(DatabaseHelper.COLUMN_SUMM_REV, summoner.revisionDate);
-    //values.put(DatabaseHelper.COLUMN_SUMM_LEVEL, summoner.summonerLevel);
+    values.put(DatabaseHelper.COLUMN_SUMM_LEVEL, summoner.summonerLevel);
     //values.put(DatabaseHelper.COLUMN_SUMM_LAST, summoner.lastMatch.matchId);
+    values.put(DatabaseHelper.COLUMN_SUMM_REGION, summoner.region);
 
     // Open the database
     open();
@@ -50,24 +51,22 @@ public class DatabaseAccessor {
     ArrayList<Summoner> list = new ArrayList<Summoner>();
 
     open();
-    /*
-     * SELECT app_items.id, app_items.title, app_items.time FROM app_items JOIN
-     * app_item_year ON app_item_year.item=app_items.id WHERE app_item_year.year
-     * = ?
-     */
 
     SQLiteQueryBuilder query = new SQLiteQueryBuilder();
     query.setTables(DatabaseHelper.TABLE_TARGETS);
 
     Cursor cursor = query.query(database, new String[] { DatabaseHelper.COLUMN_SUMM_ID,
-        DatabaseHelper.COLUMN_SUMM_NAME//, DatabaseHelper.COLUMN_SUMM_IC, DatabaseHelper.COLUMN_SUMM_REV,
-        /*DatabaseHelper.COLUMN_SUMM_LEVEL, DatabaseHelper.COLUMN_SUMM_LAST,*/ }, null, null, null, null, null);
+        DatabaseHelper.COLUMN_SUMM_NAME, DatabaseHelper.COLUMN_SUMM_IC, DatabaseHelper.COLUMN_SUMM_REGION,
+        DatabaseHelper.COLUMN_SUMM_LEVEL}, null, null, null, null, null);
 
     cursor.moveToFirst();
     while (!cursor.isAfterLast()) {
-      Summoner summoner = new Summoner(cursor.getLong(0), cursor.getString(1));
-      //summoner.lastMatch = new LastMatch();
-      //summoner.lastMatch.matchId = cursor.getLong(5);
+      Summoner summoner = new Summoner();
+      summoner.id = cursor.getLong(0);
+      summoner.name = cursor.getString(1);
+      summoner.profileIconId = cursor.getInt(2);
+      summoner.region = cursor.getString(3);
+      summoner.summonerLevel = cursor.getInt(4);
       list.add(summoner);
       cursor.moveToNext();
     }
