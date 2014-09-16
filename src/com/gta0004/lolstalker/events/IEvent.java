@@ -9,5 +9,6 @@ public interface IEvent extends Parcelable{
   public int getEventType();
   public String getMessage();
   public int compareTo(IEvent rhs);
+  public String getRegion();
 
 }

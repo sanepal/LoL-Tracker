@@ -14,12 +14,14 @@ public class LastGameEvent implements IEvent {
   private boolean winner;
   private int champId;
   private long matchFinish;
+  private String region;
   
   public LastGameEvent (Summoner summoner) {
     this.summonerName = summoner.name;
     this.winner = summoner.lastMatch.winner;
     this.champId = summoner.lastMatch.champId;
     this.matchFinish = summoner.lastMatch.getMatchFinish();
+    this.region = summoner.region;
   }
   
   private LastGameEvent(Parcel in) {    
@@ -27,6 +29,7 @@ public class LastGameEvent implements IEvent {
     winner = (in.readInt() == 1);
     champId = in.readInt();
     matchFinish = in.readLong();
+    region = in.readString();
   }
   
   @Override
@@ -40,6 +43,7 @@ public class LastGameEvent implements IEvent {
     dest.writeInt(winner ? 1 : 0);
     dest.writeInt(champId);
     dest.writeLong(matchFinish);
+    dest.writeString(region);
   }
   
   public static final Parcelable.Creator<LastGameEvent> CREATOR = new Parcelable.Creator<LastGameEvent>() {
@@ -89,5 +93,10 @@ public class LastGameEvent implements IEvent {
     
     Long lhs = Long.valueOf(getEventTime());
     return lhs.compareTo(Long.valueOf(rhs.getEventTime()));
+  }
+
+  @Override
+  public String getRegion() {
+    return region;
   }
 }

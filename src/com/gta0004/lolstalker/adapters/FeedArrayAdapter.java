@@ -3,6 +3,7 @@ package com.gta0004.lolstalker.adapters;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 import com.gta0004.lolstalker.events.IEvent;
 import com.gta0004.lolstalker.utils.Constants;
@@ -20,7 +21,7 @@ public class FeedArrayAdapter extends ArrayAdapter<IEvent>{
   private List<IEvent> objects;
 
   public FeedArrayAdapter(Context context, List<IEvent> objects) {
-    super(context, android.R.layout.simple_list_item_2, objects);
+    super(context, com.gta0004.lolstalker.R.layout.triple_list_item, objects);
     this.context = context;
     this.objects = objects;
   }
@@ -31,20 +32,23 @@ public class FeedArrayAdapter extends ArrayAdapter<IEvent>{
     if (convertView == null) {
       LayoutInflater inflater = (LayoutInflater) this.context
               .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-      convertView = inflater.inflate(android.R.layout.simple_list_item_2, parent, false);
+      convertView = inflater.inflate(com.gta0004.lolstalker.R.layout.triple_list_item, parent, false);
     }    
     
     //get event
     IEvent event = objects.get(position);
     //populate text fields
-    TextView time = (TextView) convertView.findViewById(android.R.id.text2);
+    TextView time = (TextView) convertView.findViewById(com.gta0004.lolstalker.R.id.secondary_text_1);
     time.setText(event.getFormattedEventTime());
-    TextView main  = (TextView) convertView.findViewById(android.R.id.text1);
+    TextView region = (TextView) convertView.findViewById(com.gta0004.lolstalker.R.id.secondary_text_2);
+    region.setText(event.getRegion().toUpperCase(Locale.getDefault()));
+    TextView main  = (TextView) convertView.findViewById(com.gta0004.lolstalker.R.id.main_text);
     main.setText(event.getMessage());
     
     //set text color to white
     main.setTextColor(0xFFFFFFFF);
     time.setTextColor(0xFFFFFFFF);
+    region.setTextColor(0xFFFFFFFF);
     
     //set appropriate background color for list item
     if (event.getEventType() == Constants.EVENT_NEGATIVE) {
