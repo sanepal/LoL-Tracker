@@ -58,22 +58,19 @@ public class LastGameEvent implements IEvent {
   
   @Override
   public String getMessage() {
-    String s = "";
-    s += summonerName + " ";
+    StringBuilder sb = new StringBuilder();
+    sb.append(summonerName );
     if (winner)
-      s += "won a game ";
+      sb.append(" won a game ");
     else
-      s += "lost a game ";
-    s += "as " + champId + ".";
-    return s;
+      sb.append(" lost a game ");
+    sb.append("as " + champId + ".");
+    return sb.toString();
   }
   
   @Override
   public int getEventType() {
-    if (winner)
-      return Constants.EVENT_POSITIVE;
-    else
-      return Constants.EVENT_NEGATIVE;
+    return winner ? Constants.EVENT_POSITIVE : Constants.EVENT_NEGATIVE;
   }
 
   @Override
