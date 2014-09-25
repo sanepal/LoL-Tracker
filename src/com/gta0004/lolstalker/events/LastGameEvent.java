@@ -12,14 +12,14 @@ public class LastGameEvent implements IEvent {
   private static final String TAG = "LastGameEvent";
   private String summonerName;
   private boolean winner;
-  private int champId;
+  private String champName;
   private long matchFinish;
   private String region;
   
   public LastGameEvent (Summoner summoner) {
     this.summonerName = summoner.name;
     this.winner = summoner.lastMatch.winner;
-    this.champId = summoner.lastMatch.champId;
+    this.champName = summoner.lastMatch.champName;
     this.matchFinish = summoner.lastMatch.getMatchFinish();
     this.region = summoner.region;
   }
@@ -27,7 +27,7 @@ public class LastGameEvent implements IEvent {
   private LastGameEvent(Parcel in) {    
     summonerName = in.readString();
     winner = (in.readInt() == 1);
-    champId = in.readInt();
+    champName = in.readString();
     matchFinish = in.readLong();
     region = in.readString();
   }
@@ -41,7 +41,7 @@ public class LastGameEvent implements IEvent {
   public void writeToParcel(Parcel dest, int flags) {
     dest.writeString(summonerName);
     dest.writeInt(winner ? 1 : 0);
-    dest.writeInt(champId);
+    dest.writeString(champName);
     dest.writeLong(matchFinish);
     dest.writeString(region);
   }
@@ -64,7 +64,7 @@ public class LastGameEvent implements IEvent {
       sb.append(" won a game ");
     else
       sb.append(" lost a game ");
-    sb.append("as " + champId + ".");
+    sb.append("as " + champName + ".");
     return sb.toString();
   }
   

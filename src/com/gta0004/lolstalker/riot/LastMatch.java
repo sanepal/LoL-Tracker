@@ -9,6 +9,7 @@ public class LastMatch implements Parcelable{
   public boolean winner;
   public int pentakills;
   public int champId;
+  public String champName;
   public long matchCreation;
   public long matchDuration;
 
@@ -28,6 +29,7 @@ public class LastMatch implements Parcelable{
     dest.writeInt(winner ? 1 : 0);
     dest.writeInt(pentakills);   
     dest.writeInt(champId);
+    dest.writeString(champName);
     dest.writeLong(matchCreation);
     dest.writeLong(matchDuration);
   }
@@ -48,6 +50,7 @@ public class LastMatch implements Parcelable{
     winner = (in.readInt() == 1);
     pentakills = in.readInt();
     champId = in.readInt();
+    champName = in.readString();
     matchCreation = in.readLong();
     matchDuration = in.readLong();
   }

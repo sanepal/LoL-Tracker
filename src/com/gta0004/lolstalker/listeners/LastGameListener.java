@@ -19,6 +19,7 @@ import com.gta0004.lolstalker.utils.Constants;
 
 public class LastGameListener extends AbstractPlayerActivityListener {
   
+  private OnPlayerActivityListenerFinished mCallback;
   private static final String TAG = "LastGameListener";
   private long lastMatchId;
   private boolean stateChanged = false;
@@ -45,7 +46,7 @@ public class LastGameListener extends AbstractPlayerActivityListener {
           stateChanged = mostRecentMatchId != lastMatchId;
           if (stateChanged) {
             lastMatchId = mostRecentMatchId;
-            LastMatch newMatch = new LastMatch();
+            final LastMatch newMatch = new LastMatch();
             newMatch.matchId = lastMatchId;
             newMatch.matchCreation = jsonObj.getLong("matchCreation");
             newMatch.matchDuration = jsonObj.getLong("matchDuration");
@@ -54,10 +55,30 @@ public class LastGameListener extends AbstractPlayerActivityListener {
             jsonObj = jsonObj.getJSONObject("stats");
             newMatch.winner = jsonObj.getBoolean("winner");
             newMatch.pentakills = jsonObj.getInt("pentaKills");
-            mSummoner.lastMatch = newMatch;
+            String cUrl = String.format(Constants.GET_CHAMP_URL, mSummoner.region, mSummoner.region, newMatch.champId);
+            JsonObjectRequest champRequest = new JsonObjectRequest(Request.Method.GET, cUrl, null, new Response.Listener<JSONObject>() {
+
+              @Override
+              public void onResponse(JSONObject response) {
+                try {
+                  newMatch.champName = response.getString("name");
+                } catch (JSONException e) {
+                  e.printStackTrace();
+                }
+                mSummoner.lastMatch = newMatch;
+                mCallback.onFinish();
+                
+              }
+            }, new Response.ErrorListener() {
+
+              @Override
+              public void onErrorResponse(VolleyError e) {
+                e.printStackTrace();
+              }
+            });
+            ApiRequestQueue.getInstance(mContext).addToRequestQueue(champRequest);
           }
         } catch (JSONException e) {
-          // TODO Auto-generated catch block
           e.printStackTrace();
         }        
       }
@@ -66,7 +87,6 @@ public class LastGameListener extends AbstractPlayerActivityListener {
   
         @Override
         public void onErrorResponse(VolleyError error) {
-            // TODO Auto-generated method stub
           Log.i(TAG, "Unsuccessful request");
           Log.i(TAG, error.getLocalizedMessage());
           stateChanged = false;
@@ -92,5 +112,10 @@ public class LastGameListener extends AbstractPlayerActivityListener {
   @Override
   public IEvent getEvent() {
     return new LastGameEvent(mSummoner);
+  }
+
+  @Override
+  public void setCallback(OnPlayerActivityListenerFinished mCallback) {
+    this.mCallback = mCallback;    
   }
 }

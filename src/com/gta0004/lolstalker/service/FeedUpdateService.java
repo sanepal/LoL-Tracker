@@ -12,6 +12,7 @@ import com.gta0004.lolstalker.db.DatabaseAccessor;
 import com.gta0004.lolstalker.events.IEvent;
 import com.gta0004.lolstalker.listeners.LastGameListener;
 import com.gta0004.lolstalker.listeners.IPlayerActivityListener;
+import com.gta0004.lolstalker.listeners.OnPlayerActivityListenerFinished;
 import com.gta0004.lolstalker.riot.Summoner;
 
 import android.app.NotificationManager;
@@ -57,20 +58,26 @@ public class FeedUpdateService extends Service {
         return;
       }				
       //run listener and get updates
-      IPlayerActivityListener listener = listeners.get(currIndex++);
-      listener.run();
-      if (listener.stateChanged()) {
-        Log.i(TAG, "Listener state was changed.");
-        //if state was changed, send the message back to the main activity
-        //TODO if activity is in bg, send notification as well
-        IEvent event = listener.getEvent();
-        notifyActivity(event);
-        if (!mPrefs.getBoolean("isInForeground", true))
-          sendNotification(event);
-        events.add(event);
-      } else {
-        Log.i(TAG, "No change to listener.");
-      }	
+      final IPlayerActivityListener listener = listeners.get(currIndex++);
+      listener.setCallback(new OnPlayerActivityListenerFinished() {
+
+        @Override
+        public void onFinish() {
+          if (listener.stateChanged()) {
+            Log.i(TAG, "Listener state was changed.");
+            //if state was changed, send the message back to the main activity
+            IEvent event = listener.getEvent();
+            notifyActivity(event);
+            if (!mPrefs.getBoolean("isInForeground", true))
+              sendNotification(event);
+            events.add(event);
+          } else {
+            Log.i(TAG, "No change to listener.");
+          }           
+        }   
+        
+      });
+      listener.run();      
     }
   };
   private ScheduledFuture listUpdateHandle = null;
