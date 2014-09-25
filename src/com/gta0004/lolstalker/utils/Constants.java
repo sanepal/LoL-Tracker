@@ -8,4 +8,6 @@ public class Constants {
   public static final int EVENT_NEUTRAL = 0;
   public static final int EVENT_POSITIVE = 1;
   public static final int EVENT_NEGATIVE = 2;
+  
+  public static final String LAST_MATCH_URL = "https://%1$s.api.pvp.net/api/lol/%2$s/v2.2/matchhistory/%3$s?beginIndex=0&endIndex=1&" + KEY_PARAM;
 }

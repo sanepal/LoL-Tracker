@@ -72,45 +72,6 @@ public class FeedUpdateService extends Service {
         Log.i(TAG, "No change to listener.");
       }	
     }
-
-    private void notifyActivity(IEvent event) {
-      Intent intent = new Intent(MainActivity.NEW_FEED);
-      intent.putExtra("Message",event);
-      LocalBroadcastManager.getInstance(getApplication()).sendBroadcast(intent);
-    }
-
-    private void sendNotification(IEvent event) {
-      NotificationCompat.Builder mBuilder =
-          new NotificationCompat.Builder(getApplication())
-      .setSmallIcon(com.gta0004.lolstalker.R.drawable.ic_launcher)
-      .setContentTitle("My notification")
-      .setContentText(event.getMessage())
-      .setAutoCancel(true);
-      // Creates an explicit intent for an Activity in your app
-      Intent resultIntent = new Intent(getApplication(), MainActivity.class);
-
-      // The stack builder object will contain an artificial back stack for the
-      // started Activity.
-      // This ensures that navigating backward from the Activity leads out of
-      // your application to the Home screen.
-      TaskStackBuilder stackBuilder = TaskStackBuilder.create(getApplication());
-      // Adds the back stack for the Intent (but not the Intent itself)
-      stackBuilder.addParentStack(MainActivity.class);
-      // Adds the Intent that starts the Activity to the top of the stack
-      stackBuilder.addNextIntent(resultIntent);
-      PendingIntent resultPendingIntent =
-          stackBuilder.getPendingIntent(
-              0,
-              PendingIntent.FLAG_UPDATE_CURRENT
-              );
-      mBuilder.setContentIntent(resultPendingIntent);
-      NotificationManager mNotificationManager =
-          (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-      // mId allows you to update the notification later on.
-      mNotificationManager.notify(1, mBuilder.build());
-
-    }
-
   };
   private ScheduledFuture listUpdateHandle = null;
   private ScheduledFuture listenerUpdateHandle = null;
@@ -133,7 +94,7 @@ public class FeedUpdateService extends Service {
     listOfSummoners = dbA.getAllSummoners();
     listeners = new ArrayList<IPlayerActivityListener>();
     for (Summoner summoner : listOfSummoners) {
-      listeners.add(new LastGameListener(summoner));
+      listeners.add(new LastGameListener(summoner, getApplicationContext()));
     }
     Log.i(TAG, "onCreate complete");
   }
@@ -150,7 +111,7 @@ public class FeedUpdateService extends Service {
       Log.i(TAG, "Adding new summoner in service");
       Summoner summoner = intent.getParcelableExtra("summoner");
       listOfSummoners.add(summoner);
-      listeners.add(new LastGameListener(summoner));
+      listeners.add(new LastGameListener(summoner, getApplicationContext()));
     }
     else if (intent != null && intent.getAction().equals("RequestEventList")) {
       Log.i(TAG, "Processing request for updated list");
@@ -189,7 +150,46 @@ public class FeedUpdateService extends Service {
     listUpdateHandle.cancel(true);
     listUpdateScheduler.shutdown();
   }
+  
+  private void notifyActivity(IEvent event) {
+    Intent intent = new Intent(MainActivity.NEW_FEED);
+    intent.putExtra("Message",event);
+    LocalBroadcastManager.getInstance(getApplication()).sendBroadcast(intent);
+  }
+
+  private void sendNotification(IEvent event) {
+    NotificationCompat.Builder mBuilder =
+        new NotificationCompat.Builder(getApplication())
+    .setSmallIcon(com.gta0004.lolstalker.R.drawable.ic_launcher)
+    .setContentTitle("My notification")
+    .setContentText(event.getMessage())
+    .setAutoCancel(true);
+    // Creates an explicit intent for an Activity in your app
+    Intent resultIntent = new Intent(getApplication(), MainActivity.class);
+
+    // The stack builder object will contain an artificial back stack for the
+    // started Activity.
+    // This ensures that navigating backward from the Activity leads out of
+    // your application to the Home screen.
+    TaskStackBuilder stackBuilder = TaskStackBuilder.create(getApplication());
+    // Adds the back stack for the Intent (but not the Intent itself)
+    stackBuilder.addParentStack(MainActivity.class);
+    // Adds the Intent that starts the Activity to the top of the stack
+    stackBuilder.addNextIntent(resultIntent);
+    PendingIntent resultPendingIntent =
+        stackBuilder.getPendingIntent(
+            0,
+            PendingIntent.FLAG_UPDATE_CURRENT
+            );
+    mBuilder.setContentIntent(resultPendingIntent);
+    NotificationManager mNotificationManager =
+        (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+    // mId allows you to update the notification later on.
+    mNotificationManager.notify(1, mBuilder.build());
+
+  }
+  
   public static boolean isInstanceCreated() { 
     return instance != null; 
- }
+  }
 }
