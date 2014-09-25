@@ -88,7 +88,6 @@ public class LastGameListener extends AbstractPlayerActivityListener {
         @Override
         public void onErrorResponse(VolleyError error) {
           Log.i(TAG, "Unsuccessful request");
-          Log.i(TAG, error.getLocalizedMessage());
           stateChanged = false;
         }
     });
