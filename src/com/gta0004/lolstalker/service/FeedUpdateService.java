@@ -19,10 +19,14 @@ import com.gta0004.lolstalker.riot.Summoner;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
@@ -33,6 +37,7 @@ import android.util.Log;
 public class FeedUpdateService extends Service {
 
   private static final String TAG = "FeedUpdateService";
+  private boolean onWiFi;
   private static FeedUpdateService instance = null;
   private static ArrayList<IEvent> events = new ArrayList<IEvent>();
   IBinder mBinder;      // interface for clients that bind
@@ -51,10 +56,10 @@ public class FeedUpdateService extends Service {
   private Runnable runListener = new Runnable() {
     @Override
     public void run() {
-      Log.i(TAG, "Running Listener");
+      //Log.i(TAG, "Running Listener");
       //if reached end of list, cancel the task so that the scheduler stops running
       if (currIndex == listeners.size()) {
-        Log.i(TAG, "Cancelling run");
+        //Log.i(TAG, "Cancelling run");
         currIndex = 0;
         listenerUpdateHandle.cancel(true);
         return;
@@ -66,7 +71,7 @@ public class FeedUpdateService extends Service {
         @Override
         public void onFinish() {
           if (listener.stateChanged()) {
-            Log.i(TAG, "Listener state was changed.");
+            //Log.i(TAG, "Listener state was changed.");
             //if state was changed, send the message back to the main activity
             IEvent event = listener.getEvent();
             notifyActivity(event);
@@ -74,7 +79,7 @@ public class FeedUpdateService extends Service {
               sendNotification(event);
             events.add(event);
           } else {
-            Log.i(TAG, "No change to listener.");
+            //Log.i(TAG, "No change to listener.");
           }           
         }   
         
@@ -105,7 +110,35 @@ public class FeedUpdateService extends Service {
     for (Summoner summoner : listOfSummoners) {
       listeners.add(new LastGameListener(summoner, getApplicationContext()));
     }
-    Log.i(TAG, "onCreate complete");
+    registerReceiver(new BroadcastReceiver() {      
+      
+      @Override
+      public void onReceive(Context context, Intent intent) {
+        if (listUpdateHandle != null) { 
+          ConnectivityManager cm = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+          NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+          boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+          if (isConnected) {
+            boolean isWiFi = activeNetwork.getType() == ConnectivityManager.TYPE_WIFI;   
+            if (isWiFi && !onWiFi) {
+              Log.i(TAG, "Switching to wifi from network");
+              onWiFi = true;
+              listUpdateHandle.cancel(true);
+              listUpdateHandle = listUpdateScheduler.scheduleWithFixedDelay(updateList, 0, 5, TimeUnit.MINUTES);
+            }
+            else if (!isWiFi && onWiFi) {
+              Log.i(TAG, "Switching to network from wifi");
+              onWiFi = false;
+              listUpdateHandle.cancel(true);
+              long delay = listUpdateHandle.getDelay(TimeUnit.MINUTES);
+              listUpdateHandle = listUpdateScheduler.scheduleWithFixedDelay(updateList, delay, 30, TimeUnit.MINUTES);
+            }
+          }
+        }
+      }
+
+    }, new IntentFilter("android.net.conn.CONNECTIVITY_CHANGE"));
+    //Log.i(TAG, "onCreate complete");
   }
   
   @Override
@@ -113,7 +146,23 @@ public class FeedUpdateService extends Service {
     if (intent != null && intent.getAction().equals("Initial")) {
       //run cumulative update on the whole list
       Log.i(TAG, "Running with initial intent");
-      listUpdateHandle = listUpdateScheduler.scheduleWithFixedDelay(updateList, 0, 30, TimeUnit.SECONDS);
+      ConnectivityManager cm = (ConnectivityManager)this.getSystemService(Context.CONNECTIVITY_SERVICE);   
+      NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+      boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+      if (isConnected) {
+        boolean isWiFi = activeNetwork.getType() == ConnectivityManager.TYPE_WIFI;
+        if (isWiFi) {
+          Log.i(TAG, "Starting service on wifi");
+          listUpdateHandle = listUpdateScheduler.scheduleWithFixedDelay(updateList, 0, 5, TimeUnit.MINUTES);
+          onWiFi = true;
+        }
+        else {
+          Log.i(TAG, "Starting service on network");
+          listUpdateHandle = listUpdateScheduler.scheduleWithFixedDelay(updateList, 0, 30, TimeUnit.MINUTES);
+          onWiFi = false;
+        }
+      }
+      
     }
     else if (intent != null && intent.getAction().equals("NewSummoner")) {
       //get summoner details from intent and add to list
