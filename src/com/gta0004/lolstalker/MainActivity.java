@@ -1,18 +1,15 @@
 package com.gta0004.lolstalker;
 
-import java.net.URI;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
-import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
-import org.apache.http.util.EntityUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.app.ActionBar;
 import android.app.Activity;
@@ -27,7 +24,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
@@ -40,21 +36,23 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import com.gta0004.lolstalker.adapters.FeedArrayAdapter;
 import com.gta0004.lolstalker.adapters.SummonerArrayAdapter;
 import com.gta0004.lolstalker.db.DatabaseAccessor;
 import com.gta0004.lolstalker.events.IEvent;
-import com.gta0004.lolstalker.riot.LastMatch;
 import com.gta0004.lolstalker.riot.Summoner;
 import com.gta0004.lolstalker.service.FeedUpdateService;
+import com.gta0004.lolstalker.urlrequests.ApiRequestQueue;
 import com.gta0004.lolstalker.utils.Constants;
 import com.gta0004.lolstalker.utils.Region;
 
@@ -233,14 +231,49 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     return super.onOptionsItemSelected(item);
   }
 
-  private void addNewSummoner(Summoner summoner) {
-    dbA.insertNewSummoner(summoner);
-    adapterForSummoners.add(summoner);
-    adapterForSummoners.notifyDataSetChanged();
-    Intent intent = new Intent(this, FeedUpdateService.class);
-    intent.setAction("NewSummoner");
-    intent.putExtra("summoner", summoner);
-    startService(intent);
+  private void addNewSummoner(String... params) {
+    final String name = params[0].replace(" ", "");
+    final String region = params[1];
+    String url = String.format(Constants.FIND_NAME_URL, region, region, name);
+    JsonObjectRequest verifyNameRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+
+      @Override
+      public void onResponse(JSONObject response) {
+        Gson gson = new Gson();
+        try {
+          Summoner summoner = gson.fromJson(response.getString(name.toLowerCase(Locale.ENGLISH)), Summoner.class);
+          if (summoner == null) {
+            Toast.makeText(getApplicationContext(), NameLookupResponseCode.DOES_NOT_EXIST.getMessage(), Toast.LENGTH_SHORT).show();
+            return;
+          }
+          summoner.region = region;
+          dbA.insertNewSummoner(summoner);
+          adapterForSummoners.add(summoner);
+          adapterForSummoners.notifyDataSetChanged();
+          Intent intent = new Intent(getApplication(), FeedUpdateService.class);
+          intent.setAction("NewSummoner");
+          intent.putExtra("summoner", summoner);
+          startService(intent);
+          Toast.makeText(getApplicationContext(), NameLookupResponseCode.SUCCESS.getMessage(), Toast.LENGTH_SHORT).show();
+        } catch (JsonSyntaxException e) {
+          Toast.makeText(getApplicationContext(), NameLookupResponseCode.UNKNOWN_ERROR.getMessage(), Toast.LENGTH_SHORT).show();
+          e.printStackTrace();
+        } catch (JSONException e) {
+          Toast.makeText(getApplicationContext(), NameLookupResponseCode.UNKNOWN_ERROR.getMessage(), Toast.LENGTH_SHORT).show();
+          e.printStackTrace();
+        }
+        
+      }
+    }, new Response.ErrorListener() {
+
+      @Override
+      public void onErrorResponse(VolleyError e) {
+        Toast.makeText(getApplicationContext(), NameLookupResponseCode.UNKNOWN_ERROR.getMessage(), Toast.LENGTH_SHORT).show();
+        // TODO Auto-generated method stub
+        
+      }
+    });
+    ApiRequestQueue.getInstance(this).addToRequestQueue(verifyNameRequest);
   }
 
   private void addNewEvent(IEvent event) {
@@ -324,91 +357,6 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     }
   }
 
-  public class VerifyNameTask extends AsyncTask<String, Void, Summoner> {
-
-    private NameLookupResponseCode result;
-
-    @Override
-    protected Summoner doInBackground(String... params) {
-      String name = params[0];
-      name = name.replace(" ", "");
-      String region = params[1];
-      HttpGet request = new HttpGet();
-      HttpResponse response = null;
-      JsonParser parser = new JsonParser();
-      JsonObject jsonObj = null;
-      Gson gson = new Gson();
-      try {
-        URI website = new URI("https://"+region+".api.pvp.net/api/lol/"+region+"/v1.4/summoner/by-name/" + name + "?"
-            + Constants.KEY_PARAM);
-        Log.i(TAG, website.toString());
-
-        request.setURI(website);
-        response = httpclient.execute(request);
-        int responseCode = response.getStatusLine().getStatusCode();
-        Log.i(TAG, "Get summoner response " + responseCode);
-        if (responseCode / 100 != 2) {
-          result = NameLookupResponseCode.DOES_NOT_EXIST;
-          return null;
-        }
-        String jsonStr = EntityUtils.toString(response.getEntity());        
-        jsonObj = parser.parse(jsonStr).getAsJsonObject();        
-        Summoner summoner = gson.fromJson(jsonObj.get(name.toLowerCase(Locale.ENGLISH)).getAsJsonObject(), Summoner.class);
-        if (summoner == null) {
-          result = NameLookupResponseCode.BAD_SUMMONER_NAME;
-          return null;
-        }
-        summoner.region = region;
-        website = new URI("https://"+region+".api.pvp.net/api/lol/"+region+"/v2.2/matchhistory/" + summoner.id
-            + "?beginIndex=0&endIndex=1&" + Constants.KEY_PARAM);
-        request.setURI(website);
-        response = httpclient.execute(request);
-        responseCode = response.getStatusLine().getStatusCode();
-        Log.i(TAG, "Last Match response " + responseCode);
-        if (responseCode / 100 != 2) {
-          result = NameLookupResponseCode.UNKNOWN_ERROR;
-          return null;
-        }
-        try {
-          jsonStr = EntityUtils.toString(response.getEntity());
-          jsonObj = parser.parse(jsonStr).getAsJsonObject();
-          jsonObj = jsonObj.get("matches").getAsJsonArray().get(0).getAsJsonObject();
-          LastMatch lastMatch = new LastMatch();
-          /*lastMatch.matchId = jsonObj.get("matchId").getAsLong();
-          lastMatch.queueType = jsonObj.get("queueType").getAsString();
-          jsonObj = jsonObj.get("participants").getAsJsonArray().get(0).getAsJsonObject();
-          jsonObj = jsonObj.get("stats").getAsJsonObject();
-          lastMatch.winner = jsonObj.get("winner").getAsBoolean();
-          lastMatch.pentakills = jsonObj.get("pentaKills").getAsInt();*/
-          lastMatch.matchId = 0;
-          summoner.lastMatch = lastMatch;
-          result = NameLookupResponseCode.SUCCESS;
-          return summoner;
-        } catch (NullPointerException e) {
-          result = NameLookupResponseCode.NO_GAMES;
-          return null;
-        }
-
-      } catch (Exception e) {
-        Log.e(TAG, "Error in http connection " + e.toString());
-        e.printStackTrace();
-        result = NameLookupResponseCode.UNKNOWN_ERROR;
-        return null;
-      }
-    }
-
-    @Override
-    public void onPostExecute(Summoner summoner) {
-      Toast.makeText(getApplication(), result.getMessage(), Toast.LENGTH_SHORT).show();
-      if (result == NameLookupResponseCode.SUCCESS) {
-        Log.i(TAG, summoner.toString());
-        addNewSummoner(summoner);
-        //addToFeed(summoner);
-      }
-    }
-
-  }
-
   public class RequestNameDialog extends DialogFragment {
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -425,9 +373,8 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
         @Override
         public void onClick(DialogInterface dialog, int which) {
           dialog.cancel();
-          AsyncTask<String, ?, ?> task = new VerifyNameTask();
-          Region selected = (Region) region.getSelectedItem();
-          task.execute(input.getText().toString(), selected.getRegionCode());          
+          Region selected = (Region) region.getSelectedItem();      
+          addNewSummoner(input.getText().toString(), selected.getRegionCode());
         }
       });
       builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {

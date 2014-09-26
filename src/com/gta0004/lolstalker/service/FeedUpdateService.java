@@ -8,6 +8,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import com.gta0004.lolstalker.MainActivity;
+import com.gta0004.lolstalker.R;
 import com.gta0004.lolstalker.db.DatabaseAccessor;
 import com.gta0004.lolstalker.events.IEvent;
 import com.gta0004.lolstalker.listeners.LastGameListener;
@@ -21,6 +22,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
@@ -168,7 +170,7 @@ public class FeedUpdateService extends Service {
     NotificationCompat.Builder mBuilder =
         new NotificationCompat.Builder(getApplication())
     .setSmallIcon(com.gta0004.lolstalker.R.drawable.ic_launcher)
-    .setContentTitle("My notification")
+    .setContentTitle(getResources().getString(R.string.app_name))
     .setContentText(event.getMessage())
     .setAutoCancel(true);
     // Creates an explicit intent for an Activity in your app

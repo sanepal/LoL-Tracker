@@ -55,7 +55,7 @@ public class LastGameListener extends AbstractPlayerActivityListener {
             jsonObj = jsonObj.getJSONObject("stats");
             newMatch.winner = jsonObj.getBoolean("winner");
             newMatch.pentakills = jsonObj.getInt("pentaKills");
-            String cUrl = String.format(Constants.GET_CHAMP_URL, mSummoner.region, mSummoner.region, newMatch.champId);
+            String cUrl = String.format(Constants.GET_CHAMP_URL, mSummoner.region, newMatch.champId);
             JsonObjectRequest champRequest = new JsonObjectRequest(Request.Method.GET, cUrl, null, new Response.Listener<JSONObject>() {
 
               @Override
