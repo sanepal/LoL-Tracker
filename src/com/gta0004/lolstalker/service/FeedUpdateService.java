@@ -7,15 +7,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import com.gta0004.lolstalker.MainActivity;
-import com.gta0004.lolstalker.R;
-import com.gta0004.lolstalker.db.DatabaseAccessor;
-import com.gta0004.lolstalker.events.IEvent;
-import com.gta0004.lolstalker.listeners.LastGameListener;
-import com.gta0004.lolstalker.listeners.IPlayerActivityListener;
-import com.gta0004.lolstalker.listeners.OnPlayerActivityListenerFinished;
-import com.gta0004.lolstalker.riot.Summoner;
-
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -24,7 +15,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.res.Resources;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.IBinder;
@@ -33,6 +23,16 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+
+import com.gta0004.lolstalker.MainActivity;
+import com.gta0004.lolstalker.R;
+import com.gta0004.lolstalker.db.DatabaseAccessor;
+import com.gta0004.lolstalker.events.IEvent;
+import com.gta0004.lolstalker.listeners.IPlayerActivityListener;
+import com.gta0004.lolstalker.listeners.LastGameListener;
+import com.gta0004.lolstalker.listeners.OnPlayerActivityListenerFinished;
+import com.gta0004.lolstalker.riot.Summoner;
+import com.gta0004.lolstalker.utils.Constants;
 
 public class FeedUpdateService extends Service {
 
@@ -87,8 +87,8 @@ public class FeedUpdateService extends Service {
       listener.run();      
     }
   };
-  private ScheduledFuture listUpdateHandle = null;
-  private ScheduledFuture listenerUpdateHandle = null;
+  private ScheduledFuture<?> listUpdateHandle = null;
+  private ScheduledFuture<?> listenerUpdateHandle = null;
   private DatabaseAccessor dbA;
   private List<Summoner> listOfSummoners;
   private List<IPlayerActivityListener> listeners;
@@ -143,7 +143,7 @@ public class FeedUpdateService extends Service {
   
   @Override
   public int onStartCommand(Intent intent, int flags, int startId) {      
-    if (intent != null && intent.getAction().equals("Initial")) {
+    if (intent != null && intent.getAction().equals(Constants.ACTION_START_SERVICE)) {
       //run cumulative update on the whole list
       Log.i(TAG, "Running with initial intent");
       ConnectivityManager cm = (ConnectivityManager)this.getSystemService(Context.CONNECTIVITY_SERVICE);   
@@ -164,14 +164,14 @@ public class FeedUpdateService extends Service {
       }
       
     }
-    else if (intent != null && intent.getAction().equals("NewSummoner")) {
+    else if (intent != null && intent.getAction().equals(Constants.ACTION_NEW_SUMMONER)) {
       //get summoner details from intent and add to list
       Log.i(TAG, "Adding new summoner in service");
-      Summoner summoner = intent.getParcelableExtra("summoner");
+      Summoner summoner = intent.getParcelableExtra(Constants.EXTRA_SUMMONER);
       listOfSummoners.add(summoner);
       listeners.add(new LastGameListener(summoner, getApplicationContext()));
     }
-    else if (intent != null && intent.getAction().equals("RequestEventList")) {
+    else if (intent != null && intent.getAction().equals(Constants.ACTION_REQUEST_FEED)) {
       Log.i(TAG, "Processing request for updated list");
       sendEventsList();
     }
@@ -181,8 +181,8 @@ public class FeedUpdateService extends Service {
   
   private void sendEventsList() {
     //Log.i(TAG, "Sending list to MainActivity");
-    Intent intent = new Intent(MainActivity.UPDATED_FEED);
-    intent.putParcelableArrayListExtra("Message", events);
+    Intent intent = new Intent(Constants.ACTION_UPDATED_FEED);
+    intent.putParcelableArrayListExtra(Constants.EXTRA_EVENTS, events);
     LocalBroadcastManager.getInstance(getApplication()).sendBroadcast(intent);    
   }
   
@@ -210,8 +210,8 @@ public class FeedUpdateService extends Service {
   }
   
   private void notifyActivity(IEvent event) {
-    Intent intent = new Intent(MainActivity.NEW_FEED);
-    intent.putExtra("Message",event);
+    Intent intent = new Intent(Constants.ACTION_NEW_FEED);
+    intent.putExtra(Constants.EXTRA_EVENT,event);
     LocalBroadcastManager.getInstance(getApplication()).sendBroadcast(intent);
   }
 

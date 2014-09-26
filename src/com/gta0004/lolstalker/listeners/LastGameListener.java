@@ -41,8 +41,7 @@ public class LastGameListener extends AbstractPlayerActivityListener {
         try {
           JSONObject jsonObj = response.getJSONArray("matches").getJSONObject(0);
           long mostRecentMatchId = jsonObj.getLong("matchId");
-          Log.i(TAG, "Last Match ID: " + lastMatchId + " Most Recent Match ID: "
-              + mostRecentMatchId);
+          //Log.i(TAG, "Last Match ID: " + lastMatchId + " Most Recent Match ID: " + mostRecentMatchId);
           stateChanged = mostRecentMatchId != lastMatchId;
           if (stateChanged) {
             lastMatchId = mostRecentMatchId;

@@ -3,11 +3,6 @@ package com.gta0004.lolstalker;
 import java.util.ArrayList;
 import java.util.Locale;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.params.BasicHttpParams;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.params.HttpParams;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -62,8 +57,6 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
    * Fragment managing the behaviors, interactions and presentation of the
    * navigation drawer.
    */
-  public static final String NEW_FEED = "com.gta0004.lolstalker.NEW_FEED"; 
-  public static final String UPDATED_FEED = "com.gta0004.lolstalker.UPDATED_FEED";
   private static final String TAG = "MainActivity";
   private NavigationDrawerFragment mNavigationDrawerFragment;
   private ArrayList<Summoner> summoners = null;
@@ -72,27 +65,18 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
   private static ArrayAdapter<IEvent> adapterForEvents = null;
   private DatabaseAccessor dbA;
   private SharedPreferences mPrefs;
-  private static HttpClient httpclient;
-  static {
-    HttpParams httpParameters = new BasicHttpParams();
-    int timeoutConnection = 3000;
-    HttpConnectionParams.setConnectionTimeout(httpParameters, timeoutConnection);
-    int timeoutSocket = 5000;
-    HttpConnectionParams.setSoTimeout(httpParameters, timeoutSocket);
-    httpclient = new DefaultHttpClient(httpParameters);
-  }
   private static LocalBroadcastManager bManager = null;
   private BroadcastReceiver bReceiver = new BroadcastReceiver() {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-      Log.i(TAG, intent.getAction());
-      if(intent.getAction().equals(NEW_FEED)) {
-        IEvent event = intent.getParcelableExtra("Message");
+      //Log.i(TAG, intent.getAction());
+      if(intent.getAction().equals(Constants.ACTION_NEW_FEED)) {
+        IEvent event = intent.getParcelableExtra(Constants.EXTRA_EVENT);
         addNewEvent(event);
       }  
-      else if (intent.getAction().equals(UPDATED_FEED)) {
-        ArrayList<IEvent> received = intent.getParcelableArrayListExtra("Message");
+      else if (intent.getAction().equals(Constants.ACTION_UPDATED_FEED)) {
+        ArrayList<IEvent> received = intent.getParcelableArrayListExtra(Constants.EXTRA_EVENTS);
         adapterForEvents.addAll(received);
         adapterForEvents.notifyDataSetChanged();
       }
@@ -130,7 +114,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
       if (FeedUpdateService.isInstanceCreated()) {
         //Log.i(TAG, "Requesting feed from service");
         Intent intent = new Intent(this, FeedUpdateService.class);
-        intent.setAction("RequestEventList");
+        intent.setAction(Constants.ACTION_REQUEST_FEED);
         startService(intent);
       }
     }    
@@ -139,15 +123,15 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
     if (!FeedUpdateService.isInstanceCreated()) {     
       //Log.i(TAG, "Starting intent for the first time");
       Intent intent = new Intent(this, FeedUpdateService.class);
-      intent.setAction("Initial");
+      intent.setAction(Constants.ACTION_START_SERVICE);
       startService(intent);
     }
     
     if (bManager == null) {
       bManager = LocalBroadcastManager.getInstance(this);
       IntentFilter intentFilter = new IntentFilter();
-      intentFilter.addAction(NEW_FEED);
-      intentFilter.addAction(UPDATED_FEED);
+      intentFilter.addAction(Constants.ACTION_NEW_FEED);
+      intentFilter.addAction(Constants.ACTION_UPDATED_FEED);
       bManager.registerReceiver(bReceiver, intentFilter);
     }    
   }
@@ -251,8 +235,8 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
           adapterForSummoners.add(summoner);
           adapterForSummoners.notifyDataSetChanged();
           Intent intent = new Intent(getApplication(), FeedUpdateService.class);
-          intent.setAction("NewSummoner");
-          intent.putExtra("summoner", summoner);
+          intent.setAction(Constants.ACTION_NEW_SUMMONER);
+          intent.putExtra(Constants.EXTRA_SUMMONER, summoner);
           startService(intent);
           Toast.makeText(getApplicationContext(), NameLookupResponseCode.SUCCESS.getMessage(), Toast.LENGTH_SHORT).show();
         } catch (JsonSyntaxException e) {
