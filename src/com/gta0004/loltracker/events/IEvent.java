@@ -1,4 +1,4 @@
-package com.gta0004.lolstalker.events;
+package com.gta0004.loltracker.events;
 
 import android.os.Parcelable;
 

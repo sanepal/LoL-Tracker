@@ -1,4 +1,4 @@
-package com.gta0004.lolstalker.urlrequests;
+package com.gta0004.loltracker.urlrequests;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;

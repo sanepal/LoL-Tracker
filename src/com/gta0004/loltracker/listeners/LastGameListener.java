@@ -1,4 +1,4 @@
-package com.gta0004.lolstalker.listeners;
+package com.gta0004.loltracker.listeners;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -10,12 +10,12 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.gta0004.lolstalker.events.IEvent;
-import com.gta0004.lolstalker.events.LastGameEvent;
-import com.gta0004.lolstalker.riot.LastMatch;
-import com.gta0004.lolstalker.riot.Summoner;
-import com.gta0004.lolstalker.urlrequests.ApiRequestQueue;
-import com.gta0004.lolstalker.utils.Constants;
+import com.gta0004.loltracker.events.IEvent;
+import com.gta0004.loltracker.events.LastGameEvent;
+import com.gta0004.loltracker.riot.LastMatch;
+import com.gta0004.loltracker.riot.Summoner;
+import com.gta0004.loltracker.urlrequests.ApiRequestQueue;
+import com.gta0004.loltracker.utils.Constants;
 
 public class LastGameListener extends AbstractPlayerActivityListener {
   

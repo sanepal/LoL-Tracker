@@ -1,4 +1,4 @@
-package com.gta0004.lolstalker.db;
+package com.gta0004.loltracker.db;
 
 import java.util.ArrayList;
 
@@ -9,7 +9,7 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
 
-import com.gta0004.lolstalker.riot.Summoner;
+import com.gta0004.loltracker.riot.Summoner;
 
 public class DatabaseAccessor {
   private SQLiteDatabase database;

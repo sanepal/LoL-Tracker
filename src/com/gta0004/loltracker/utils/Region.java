@@ -1,4 +1,4 @@
-package com.gta0004.lolstalker.utils;
+package com.gta0004.loltracker.utils;
 
 public enum Region {
   BR("Brazil", "br"),

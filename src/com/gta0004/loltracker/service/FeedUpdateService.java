@@ -1,4 +1,4 @@
-package com.gta0004.lolstalker.service;
+package com.gta0004.loltracker.service;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,15 +24,15 @@ import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-import com.gta0004.lolstalker.MainActivity;
 import com.gta0004.lolstalker.R;
-import com.gta0004.lolstalker.db.DatabaseAccessor;
-import com.gta0004.lolstalker.events.IEvent;
-import com.gta0004.lolstalker.listeners.IPlayerActivityListener;
-import com.gta0004.lolstalker.listeners.LastGameListener;
-import com.gta0004.lolstalker.listeners.OnPlayerActivityListenerFinished;
-import com.gta0004.lolstalker.riot.Summoner;
-import com.gta0004.lolstalker.utils.Constants;
+import com.gta0004.loltracker.MainActivity;
+import com.gta0004.loltracker.db.DatabaseAccessor;
+import com.gta0004.loltracker.events.IEvent;
+import com.gta0004.loltracker.listeners.IPlayerActivityListener;
+import com.gta0004.loltracker.listeners.LastGameListener;
+import com.gta0004.loltracker.listeners.OnPlayerActivityListenerFinished;
+import com.gta0004.loltracker.riot.Summoner;
+import com.gta0004.loltracker.utils.Constants;
 
 public class FeedUpdateService extends Service {
 

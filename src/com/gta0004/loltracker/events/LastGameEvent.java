@@ -1,12 +1,12 @@
-package com.gta0004.lolstalker.events;
+package com.gta0004.loltracker.events;
 
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.format.DateUtils;
 import android.util.Log;
 
-import com.gta0004.lolstalker.riot.Summoner;
-import com.gta0004.lolstalker.utils.Constants;
+import com.gta0004.loltracker.riot.Summoner;
+import com.gta0004.loltracker.utils.Constants;
 
 public class LastGameEvent implements IEvent {
   private static final String TAG = "LastGameEvent";

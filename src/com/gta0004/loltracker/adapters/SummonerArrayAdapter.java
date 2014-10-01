@@ -1,4 +1,4 @@
-package com.gta0004.lolstalker.adapters;
+package com.gta0004.loltracker.adapters;
 
 import java.util.List;
 import java.util.Locale;
@@ -10,7 +10,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
-import com.gta0004.lolstalker.riot.Summoner;
+import com.gta0004.loltracker.riot.Summoner;
 
 public class SummonerArrayAdapter extends ArrayAdapter<Summoner> {
   

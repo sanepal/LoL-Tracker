@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">LoL Stalker</string>
+    <string name="app_name">LoL Tracker</string>
     <string name="title_section1">Players</string>
     <string name="title_section2">Feed</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>

@@ -1,4 +1,4 @@
-package com.gta0004.lolstalker.db;
+package com.gta0004.loltracker.db;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
@@ -6,8 +6,8 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 
-  private static final String DATABASE_NAME = "stalker.db";
-  private static final int DATABASE_VERSION = 4;
+  private static final String DATABASE_NAME = "tracker.db";
+  private static final int DATABASE_VERSION = 5;
 
   private static final String COLUMN_ID = "id";
   public static final String COLUMN_SUMM_ID = "summoner_id";

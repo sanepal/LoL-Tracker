@@ -1,4 +1,6 @@
-package com.gta0004.lolstalker;
+package com.gta0004.loltracker;
+
+import com.gta0004.lolstalker.R;
 
 import android.app.ActionBar;
 import android.app.Activity;

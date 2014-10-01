@@ -1,4 +1,4 @@
-package com.gta0004.lolstalker.riot;
+package com.gta0004.loltracker.riot;
 
 import android.os.Parcel;
 import android.os.Parcelable;

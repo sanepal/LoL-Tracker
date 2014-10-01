@@ -1,6 +1,6 @@
-package com.gta0004.lolstalker.listeners;
+package com.gta0004.loltracker.listeners;
 
-import com.gta0004.lolstalker.events.IEvent;
+import com.gta0004.loltracker.events.IEvent;
 
 public abstract class AbstractPlayerActivityListener implements IPlayerActivityListener{
 	public abstract void run();

@@ -1,4 +1,4 @@
-package com.gta0004.lolstalker;
+package com.gta0004.loltracker;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -23,7 +23,6 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.DrawerLayout;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -41,15 +40,16 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.gta0004.lolstalker.adapters.FeedArrayAdapter;
-import com.gta0004.lolstalker.adapters.SummonerArrayAdapter;
-import com.gta0004.lolstalker.db.DatabaseAccessor;
-import com.gta0004.lolstalker.events.IEvent;
-import com.gta0004.lolstalker.riot.Summoner;
-import com.gta0004.lolstalker.service.FeedUpdateService;
-import com.gta0004.lolstalker.urlrequests.ApiRequestQueue;
-import com.gta0004.lolstalker.utils.Constants;
-import com.gta0004.lolstalker.utils.Region;
+import com.gta0004.lolstalker.R;
+import com.gta0004.loltracker.adapters.FeedArrayAdapter;
+import com.gta0004.loltracker.adapters.SummonerArrayAdapter;
+import com.gta0004.loltracker.db.DatabaseAccessor;
+import com.gta0004.loltracker.events.IEvent;
+import com.gta0004.loltracker.riot.Summoner;
+import com.gta0004.loltracker.service.FeedUpdateService;
+import com.gta0004.loltracker.urlrequests.ApiRequestQueue;
+import com.gta0004.loltracker.utils.Constants;
+import com.gta0004.loltracker.utils.Region;
 
 public class MainActivity extends Activity implements NavigationDrawerFragment.NavigationDrawerCallbacks {
 

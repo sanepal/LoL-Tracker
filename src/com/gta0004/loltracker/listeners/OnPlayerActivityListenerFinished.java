@@ -1,4 +1,4 @@
-package com.gta0004.lolstalker.listeners;
+package com.gta0004.loltracker.listeners;
 
 public interface OnPlayerActivityListenerFinished {
   void onFinish();

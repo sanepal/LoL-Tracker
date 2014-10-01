@@ -1,12 +1,12 @@
-package com.gta0004.lolstalker.adapters;
+package com.gta0004.loltracker.adapters;
 
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
-import com.gta0004.lolstalker.events.IEvent;
-import com.gta0004.lolstalker.utils.Constants;
+import com.gta0004.loltracker.events.IEvent;
+import com.gta0004.loltracker.utils.Constants;
 
 import android.content.Context;
 import android.view.LayoutInflater;
