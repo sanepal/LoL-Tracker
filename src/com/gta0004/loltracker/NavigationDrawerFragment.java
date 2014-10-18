@@ -99,7 +99,7 @@ public class NavigationDrawerFragment extends Fragment {
         selectItem(position);
       }
     });
-    mDrawerListView.setAdapter(new ArrayAdapter<String>(getActionBar().getThemedContext(),
+    mDrawerListView.setAdapter(new ArrayAdapter<String>(((MainActivity)getActivity()).getSupportActionBar().getThemedContext(),
         android.R.layout.simple_list_item_activated_1, android.R.id.text1, new String[] {
             getString(R.string.title_section1), getString(R.string.title_section2), }));
     mDrawerListView.setItemChecked(mCurrentSelectedPosition, true);
@@ -128,7 +128,7 @@ public class NavigationDrawerFragment extends Fragment {
     mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
     // set up the drawer's list view with items and click listener
 
-    ActionBar actionBar = getActionBar();
+    android.support.v7.app.ActionBar actionBar = ((MainActivity)getActivity()).getSupportActionBar();
     actionBar.setDisplayHomeAsUpEnabled(true);
     actionBar.setHomeButtonEnabled(true);
 
@@ -265,7 +265,7 @@ public class NavigationDrawerFragment extends Fragment {
    * the global app 'context', rather than just what's in the current screen.
    */
   private void showGlobalContextActionBar() {
-    ActionBar actionBar = getActionBar();
+    android.support.v7.app.ActionBar actionBar = ((MainActivity)getActivity()).getSupportActionBar();
     actionBar.setDisplayShowTitleEnabled(true);
     actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
     actionBar.setTitle(R.string.app_name);

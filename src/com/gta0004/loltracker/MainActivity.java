@@ -23,6 +23,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -51,7 +52,7 @@ import com.gta0004.loltracker.urlrequests.ApiRequestQueue;
 import com.gta0004.loltracker.utils.Constants;
 import com.gta0004.loltracker.utils.Region;
 
-public class MainActivity extends Activity implements NavigationDrawerFragment.NavigationDrawerCallbacks {
+public class MainActivity extends ActionBarActivity implements NavigationDrawerFragment.NavigationDrawerCallbacks {
 
   /**
    * Fragment managing the behaviors, interactions and presentation of the
@@ -180,7 +181,7 @@ public class MainActivity extends Activity implements NavigationDrawerFragment.N
   }
 
   public void restoreActionBar() {
-    ActionBar actionBar = getActionBar();
+    android.support.v7.app.ActionBar actionBar = getSupportActionBar();
     actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
     actionBar.setDisplayShowTitleEnabled(true);
     actionBar.setTitle(mTitle);
